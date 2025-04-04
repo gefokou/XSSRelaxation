@@ -6,23 +6,7 @@ from rdflib.term import Variable
 
 # 1️⃣ Initialisation du graphe RDF
 g = Graph()
-ex = Namespace("http://example.org/")
-
-# Liaison de l'espace de noms
-g.bind("ex", ex)
-
-# Ajout des triplets dans le graphe
-g.add((ex.s1, RDF.type, ex.Lecturer))
-g.add((ex.s1, ex.teacherOf, Literal("SW")))
-g.add((ex.s1, ex.age, Literal(45)))
-
-g.add((ex.s2, RDF.type, ex.Lecturer))
-g.add((ex.s2, ex.nationality, Literal("US")))
-g.add((ex.s2, ex.age, Literal(46)))
-
-g.add((ex.s3, RDF.type, ex.FullProfessor))
-g.add((ex.s3, ex.teacherOf, Literal("DB")))
-g.add((ex.s3, ex.age, Literal(46)))
+g.parse("graph.ttl", format="turtle")
 
 # 2️⃣ Définition des clauses de la requête
 t1 = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/Lecturer")))
