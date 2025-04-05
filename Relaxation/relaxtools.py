@@ -287,7 +287,7 @@ class TripleRelaxation:
 # ---------------------------
 if __name__ == "__main__":
    
-    clause1=SimpleLiteral((Variable("p"), URIRef("http://example.org/nationality"), Variable("n")))
+    clause1=SimpleLiteral((URIRef("http://example.org/person"), URIRef("http://example.org/nationality"), Variable("n")))
     # 1️⃣ Initialisation du graphe RDF
     g = Graph()
     g.parse("graph.ttl", format="turtle")
