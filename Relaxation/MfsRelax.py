@@ -22,8 +22,8 @@ class QueryRelaxer:
 
     def _parse_query_triples(self) -> List[str]:
         """Extrait les triplets de la requête originale"""
-        parsed = parser.parseQuery(self.original_query)
-        return [str(t) for t in algebra.traverse(parsed.algebra)]
+        # parsed = parser.parseQuery(self.original_query)
+        return self.original_query.clauses
 
     def _init_relaxation_space(self):
         """Prépare l'espace de relaxation initial"""
@@ -53,7 +53,6 @@ class QueryRelaxer:
         while self.relaxation_queue:
             current = self.relaxation_queue.pop(0)
             state_hash = self._state_hash(current)
-            
             if state_hash in self.processed:
                 continue
             self.processed.add(state_hash)
