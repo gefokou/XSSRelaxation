@@ -1,6 +1,7 @@
 import rdflib
 from rdflib import Graph, URIRef, Literal, Variable
 from Query.SimpleLiteral import SimpleLiteral
+from rdflib import URIRef, RDFS
 
 # ---------------------------
 # Constantes et compteurs globaux
@@ -39,14 +40,97 @@ def get_super_classes(uri):
         return {super_uri: 1}
     return {}
 
-def get_super_properties(uri):
+def get_super_classes(uri, graph):
     """
-    Simule la récupération des super-propriétés pour un URI.
+    Pour un URI donné, interroge le graphe pour obtenir toutes les super-classes 
+    (triplets de la forme (uri, RDFS.subClassOf, super_class)).
+    
+    Args:
+        uri (URIRef): Le nœud pour lequel on souhaite récupérer les super-classes.
+        graph (rdflib.Graph): Le graphe RDF dans lequel effectuer la recherche.
+        
+    Returns:
+        dict: Un dictionnaire où les clés sont les super-classes (URIRef) et la valeur associée est un niveau de relaxation (ici fixé à 1).
+              Si aucune super-classe n'est trouvée, un comportement par défaut est appliqué.
     """
-    if isinstance(uri, URIRef):
-        super_uri = URIRef(str(uri).replace("P", "SuperP"))
-        return {super_uri: 1}
-    return {}
+    # Vérifier que uri est bien une URI
+    if not isinstance(uri, URIRef):
+        return {}
+
+    super_classes = {}
+    
+    # Recherche dans le graphe des triplets (uri, RDFS.subClassOf, ?super)
+    for _, _, super_class in graph.triples((uri, RDFS.subClassOf, None)):
+        super_classes[super_class] = 1
+
+    # Si aucune super-classe n'est trouvée dans le graphe, on applique un comportement par défaut
+    if not super_classes:
+        # Par exemple, transformer "P" en "SuperP" dans l'URI, comme comportement par défaut
+        default_super = URIRef(str(uri).replace("P", "SuperP"))
+        super_classes[default_super] = 1
+
+    return super_classes
+
+def get_super_properties(uri, graph):
+    """
+    Pour un URI donné, interroge le graphe pour obtenir toutes les super-propriétés 
+    (triplets de la forme (uri, RDFS.subPropertyOf, super_property)).
+    
+    Args:
+        uri (URIRef): Le nœud pour lequel on souhaite récupérer les super-propriétés.
+        graph (rdflib.Graph): Le graphe RDF dans lequel effectuer la recherche.
+        
+    Returns:
+        dict: Un dictionnaire où les clés sont les super-propriétés (URIRef) et la valeur associée est un niveau de relaxation (ici fixé à 1).
+              Si aucune super-propriété n'est trouvée, un comportement par défaut est appliqué.
+    """
+    # Vérifier que uri est bien une URI
+    if not isinstance(uri, URIRef):
+        return {}
+
+    super_properties = {}
+    
+    # Recherche dans le graphe des triplets (uri, RDFS.subPropertyOf, ?super)
+    for _, _, super_property in graph.triples((uri, RDFS.subPropertyOf, None)):
+        super_properties[super_property] = 1
+
+    # Si aucune super-propriété n'est trouvée dans le graphe, on applique un comportement par défaut
+    if not super_properties:
+        # Par exemple, transformer "P" en "SuperP" dans l'URI, comme comportement par défaut
+        default_super = URIRef(str(uri).replace("P", "SuperP"))
+        super_properties[default_super] = 1
+
+    return super_properties
+    """
+    Pour un URI donné, interroge le graphe pour obtenir toutes les super-classes 
+    (triplets de la forme (uri, RDFS.subClassOf, super_class)).
+    
+    Args:
+        uri (URIRef): Le nœud pour lequel on souhaite récupérer les super-classes.
+        graph (rdflib.Graph): Le graphe RDF dans lequel effectuer la recherche.
+        
+    Returns:
+        dict: Un dictionnaire où les clés sont les super-classes (URIRef) et la valeur associée est un niveau de relaxation (ici fixé à 1).
+              Si aucune super-classe n'est trouvée, un comportement par défaut est appliqué.
+    """
+    # Vérifier que uri est bien une URI
+    if not isinstance(uri, URIRef):
+        return {}
+
+    super_classes = {}
+    
+    # Recherche dans le graphe des triplets (uri, RDFS.subClassOf, ?super)
+    for _, _, super_class in graph.triples((uri, RDFS.subClassOf, None)):
+        super_classes[super_class] = 1
+
+    # Si aucune super-classe n'est trouvée dans le graphe, on applique un comportement par défaut
+    if not super_classes:
+        # Par exemple, transformer "P" en "SuperP" dans l'URI, comme comportement par défaut
+        default_super = URIRef(str(uri).replace("P", "SuperP"))
+        super_classes[default_super] = 1
+
+    return super_classes
+
 
 # ---------------------------
 # Classe représentant un triplet relaxé
@@ -85,7 +169,6 @@ class NodeRelaxed:
 
     def __repr__(self):
         return f"NodeRelaxed({self.node_1}, {self.node_2}, {self.node_3}, sim={self.similarity}, levels={self.relaxation_levels})"
-
 # ---------------------------
 # Classe principale de relaxation de triplet
 # ---------------------------
@@ -121,7 +204,7 @@ class TripleRelaxation:
         relaxed_node = {}
         if isinstance(original_node, URIRef):
             relaxed_node[original_node] = 0
-            relaxed_node.update(get_super_classes(original_node))
+            relaxed_node.update(get_super_classes(original_node, self.session))
             var_name = f"R{num_resource_release}"
             num_resource_release += 1
             var_node = Variable(var_name)
@@ -145,7 +228,7 @@ class TripleRelaxation:
         relaxed_node = {}
         if isinstance(original_node, URIRef):
             relaxed_node[original_node] = 0
-            relaxed_node.update(get_super_properties(original_node))
+            relaxed_node.update(get_super_properties(original_node,self.session))
             var_name = f"P{num_pred_release}"
             num_pred_release += 1
             var_node = Variable(var_name)
@@ -287,7 +370,7 @@ class TripleRelaxation:
 # ---------------------------
 if __name__ == "__main__":
    
-    clause1=SimpleLiteral((URIRef("http://example.org/person"), URIRef("http://example.org/nationality"), Variable("n")))
+    clause1=SimpleLiteral((URIRef("http://example.org/FullProfessor"), URIRef("http://example.org/teacherOf"), Literal("SW")))
     # 1️⃣ Initialisation du graphe RDF
     g = Graph()
     g.parse("graph.ttl", format="turtle")
