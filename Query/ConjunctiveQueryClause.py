@@ -88,7 +88,14 @@ class ConjunctiveQuery:
         if element in self.clauses:
             self.clauses.remove(element)
         return self  # Retourne l'objet mis à jour pour permettre le chaînage d'appels
-
+    def remove_clause(self, clause): # type: ignore
+        """
+        Supprime une clause de la requête conjonctive.
+        Args:
+            clause: La clause à supprimer (SimpleLiteral ou FilterLiteral)
+        """
+        for i in clause.clauses:
+            self.clauses.remove(i)
     def add(self, clause, index: int):
         """
         Ajoute une clause à une position spécifique 

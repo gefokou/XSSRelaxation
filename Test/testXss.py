@@ -42,8 +42,9 @@ for comb in combined_ex1:
     # sorted_comb = sorted(comb, key=lambda triple: str(triple[2]))
     # # On concatène les littéraux pour simuler t1t2, etc.
     print("".join(str(triple.label) for triple in comb.clauses))
+    print("-"*50)
 # Calcul des XSS
-xss_results = XSSGenerator.compute_xss(query, mfs_list)
+xss_results = XSSGenerator.compute_xss(query,g)
 
 # Affichage des résultats
 print(f"Nombre de XSS trouvés : {len(xss_results)}")

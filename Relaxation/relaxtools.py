@@ -1,5 +1,6 @@
 import rdflib
 from rdflib import Graph, URIRef, Literal, Variable
+from Query.ConjunctiveQueryClause import ConjunctiveQuery
 from Query.SimpleLiteral import SimpleLiteral
 from rdflib import RDFS
 
@@ -88,6 +89,8 @@ class NodeRelaxed:
         self.node_1 = node_1
         self.node_2 = node_2
         self.node_3 = node_3
+        self.query=ConjunctiveQuery()
+        self.query.add_clause(SimpleLiteral((self.node_1,self.node_2,self.node_3)))
         self.similarity = similarity
         self.relaxation_levels = relaxation_levels
 
@@ -105,7 +108,7 @@ class NodeRelaxed:
         return sum(self.relaxation_levels)
 
     def __repr__(self):
-        return f"NodeRelaxed({self.node_1}, {self.node_2}, {self.node_3}, sim={self.similarity}, levels={self.relaxation_levels})"
+        return f"{self.query}                        sim={self.similarity})"
 
 # ---------------------------
 # Triple Relaxation Class
