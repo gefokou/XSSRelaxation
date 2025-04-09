@@ -1,3 +1,4 @@
+import itertools
 import rdflib
 from rdflib import Graph, URIRef, Literal, Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery
@@ -244,25 +245,101 @@ class TripleRelaxation:
         """Reset the relaxation iterator."""
         self.current_elt = -1
 
+class ConjunctiveQueryRelaxation:
+    def __init__(self, query: ConjunctiveQuery, graph: Graph, order=SIM_ORDER):
+        """
+        Initialise la relaxation d'une requête conjonctive.
+        
+        Args:
+            query (ConjunctiveQuery): La requête initiale contenant plusieurs clauses.
+            graph (Graph): La base de données RDF (un rdflib.Graph).
+            order (int): L'ordre de relaxation (par défaut SIM_ORDER).
+        """
+        self.query = query
+        self.graph = graph
+        self.order = order
+
+    def relax_query(self) -> list:
+        """
+        Génère des versions relaxées de la requête conjonctive en relaxant chacune de ses clauses.
+        
+        Returns:
+            list: Liste des requêtes (ConjunctiveQuery) relaxées.
+        """
+        # Pour chaque clause de la requête, on récupère la liste des clauses relaxées
+        relaxed_versions_per_clause = []
+        
+        for clause in self.query.clauses:
+            # On crée une instance de TripleRelaxation pour la clause
+            triple_relax = TripleRelaxation(clause, self.graph, order=self.order)
+            # Liste des versions relaxées pour cette clause
+            relaxed_clause_list = []
+            while triple_relax.has_next():
+                relaxed_triple = triple_relax.next_relaxed_triple()
+                # On suppose que relaxed_triple.query.clauses[0] contient la clause relaxée
+                relaxed_clause = relaxed_triple.query.clauses[0]
+                relaxed_clause_list.append(relaxed_clause)
+            # Si aucune version relaxée n'a été générée pour une clause, on garde la clause originale
+            if not relaxed_clause_list:
+                relaxed_clause_list.append(clause)
+            relaxed_versions_per_clause.append(relaxed_clause_list)
+        
+        # Combiner les relaxations de toutes les clauses par produit cartésien
+        all_relaxed_queries = []
+        for combination in itertools.product(*relaxed_versions_per_clause):
+            new_query = ConjunctiveQuery()
+            for clause in combination:
+                new_query.add_clause(clause)
+            all_relaxed_queries.append(new_query)
+        
+        return all_relaxed_queries
+
+# --- Exemple d'utilisation ---
+if __name__ == "__main__":
+    # Création d'une instance de ConjunctiveQuery avec plusieurs clauses.
+    cq = ConjunctiveQuery()
+    # On ajoute deux clauses, par exemple.
+    clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"),
+                             URIRef("http://example.org/teacherOf"),
+                             Literal("SW")))
+    clause2 = SimpleLiteral((URIRef("http://example.org/s2"),
+                             URIRef("http://example.org/nationality"),
+                             Literal("US")))
+    cq.add_clause(clause1)
+    cq.add_clause(clause2)
+    
+    # Création d'une base de données RDF (peut être initialisée depuis un fichier ou construite dynamiquement)
+    g = Graph()
+    # Par exemple, pour charger un fichier Turtle, décommentez la ligne suivante :
+    g.parse("graph.ttl", format="turtle")
+    
+    # Instanciation du processus de relaxation pour la requête conjonctive
+    cqr = ConjunctiveQueryRelaxation(cq, g, order=SIM_ORDER)
+    relaxed_queries = cqr.relax_query()
+    relaxed_queries.pop(0)  # Suppression de la première requête (originale)
+    # Affichage des requêtes relaxées générées
+    print("Nombre de requêtes relaxées générées:", len(relaxed_queries))
+    for rq in relaxed_queries:
+        print(f"{[i for i in rq.clauses]}")
 # ---------------------------
 # Example Usage
 # ---------------------------
-if __name__ == "__main__":
-    # Initialize RDF graph
-    g = Graph()
-    # g.parse("graph.ttl", format="turtle")  # Uncomment and provide a file if needed
+# if __name__ == "__main__":
+#     # Initialize RDF graph
+#     g = Graph()
+#     # g.parse("graph.ttl", format="turtle")  # Uncomment and provide a file if needed
 
-    # Define a triple with a Literal
-    clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"), 
-                             URIRef("http://example.org/teacherOf"), 
-                             Literal("SW")))
-    print("Triplet original:", clause1)
+#     # Define a triple with a Literal
+#     clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"), 
+#                              URIRef("http://example.org/teacherOf"), 
+#                              Literal("SW")))
+#     print("Triplet original:", clause1)
 
-    # Instantiate TripleRelaxation
-    triple_relax = TripleRelaxation(clause1, g, order=SIM_ORDER)
+#     # Instantiate TripleRelaxation
+#     triple_relax = TripleRelaxation(clause1, g, order=SIM_ORDER)
 
-    # Display generated relaxed triples
-    print("Triples relaxés générés:")
-    while triple_relax.has_next():
-        relaxed = triple_relax.next_relaxed_triple()
-        print(relaxed)
+#     # Display generated relaxed triples
+#     print("Triples relaxés générés:")
+#     while triple_relax.has_next():
+#         relaxed = triple_relax.next_relaxed_triple()
+#         print(relaxed)

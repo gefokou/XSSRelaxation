@@ -3,7 +3,7 @@ from queue import Queue
 from rdflib import Graph, URIRef, Literal, RDFS
 from Query.ConjunctiveQueryClause import ConjunctiveQuery as Query
 from Relaxation.XSSGenerator import XSSGenerator
-from Relaxation.relaxtools import TripleRelaxation
+from Relaxation.relaxtools import ConjunctiveQueryRelaxation, TripleRelaxation
 
 class ParallelRelaxationStrategy:
     def __init__(self, Q: Query, D: Graph, k: int):
@@ -33,9 +33,12 @@ class ParallelRelaxationStrategy:
         delta_list = []
         # XSSGenerator.compute_xss(Q, D) renvoie la liste des clauses candidates
         Xss = XSSGenerator.compute_xss(self.Q, self.D)
+        print(f"\n \n Xss: {Xss}")
         for xss in Xss:
             # Q.remove_clause(xss) retourne une nouvelle requête sans la clause xss
-            delta_query = self.Q.remove_clause(xss)
+            diff_triples = set(self.Q.clauses)-set(xss.clauses)
+            delta_query = Query()
+            delta_query.clauses = diff_triples
             delta_list.append((delta_query, xss))
         return delta_list
 
@@ -51,13 +54,14 @@ class ParallelRelaxationStrategy:
             def relax_task(candidate):
                 # candidate est un tuple (Q - x, x)
                 # On applique la relaxation sur la clause candidate (ici, on utilise le deuxième élément du tuple)
-                triple_relax = TripleRelaxation(candidate[1], self.D, order=1)
+                query_relax =ConjunctiveQueryRelaxation(candidate[0], self.D, order=1)
                 results = []
                 # Récupération des triplets relaxés (pour cet exemple, on récupère la première clause de la requête relaxée)
-                while triple_relax.has_next():
-                    relaxed = triple_relax.next_relaxed_triple()
-                    # On suppose ici que relaxed.query.clauses[0] est la représentation de la requête relaxée
-                    results.append(relaxed.query.clauses[0])
+                relaxed_queries = query_relax.relax_query()
+    
+                for rq in relaxed_queries:
+                    results.append(rq)
+                results.pop(0) 
                 tmp_results[candidate] = results
 
             threads = []
@@ -71,7 +75,7 @@ class ParallelRelaxationStrategy:
             # Attendre la fin de tous les threads
             for thread in threads:
                 thread.join()
-
+            print(elements)
             # Pour chaque candidat, ajouter ses résultats relaxés dans la file Cand
             for candidate in elements:
                 for relaxed_x in tmp_results.get(candidate, []):
@@ -110,7 +114,7 @@ class ParallelRelaxationStrategy:
         else:
             return []
 
-    def run(self) -> list:
+    def parallelxbs(self) -> list:
         """
         Exécute l'algorithme de relaxation parallèle.
         
@@ -134,21 +138,5 @@ class ParallelRelaxationStrategy:
         consumer_thread.start()
         producer_thread.join()
         consumer_thread.join()
-        return self.Res
 
-# --- Exemple d'utilisation ---
-if __name__ == "__main__":
-    # Création d'un exemple de requête Q (simulant une requête conjonctive)
-    Q = Query()  # Supposons que Query() initialise une requête avec quelques clauses internes.
-    
-    # Création d'une base de données RDF (rdflib.Graph)
-    D = Graph()
-    # Ici, D pourrait être rempli par D.parse(...) ou construit dynamiquement.
-    
-    # Nombre minimum de résultats requis
-    k = 5
-    
-    # Instanciation de la stratégie de relaxation parallèle
-    strategy = ParallelRelaxationStrategy(Q, D, k)
-    repaired_queries = strategy.run()
-    print("Repaired Queries:", repaired_queries)
+        return self.Res

@@ -43,7 +43,6 @@ class XSSGenerator:
         mfs_list = QueryFailureAnalyzer.find_all_failing_causes(main_query, g)
         print(f"MFS={mfs_list}")
         cand=XSSGenerator.generate_combinations(mfs_list)
-        print(f"Cand={cand}")
         result_queries = []
         main_triples = main_query.clauses
 

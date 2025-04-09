@@ -95,7 +95,8 @@ class ConjunctiveQuery:
             clause: La clause à supprimer (SimpleLiteral ou FilterLiteral)
         """
         for i in clause.clauses:
-            self.clauses.remove(i)
+            self.remove(i)
+        
     def add(self, clause, index: int):
         """
         Ajoute une clause à une position spécifique 
