@@ -168,7 +168,7 @@ class ConjunctiveQuery:
         # Pour chaque clause présente dans 'query', on l'ajoute à new_query si elle n'y figure pas déjà.
         for clause in query.clauses:
             if clause not in new_query.clauses:
-                new_query.add(clause)
+                new_query.add_clause(clause)
         return new_query
 
     def __repr__(self) -> str:
