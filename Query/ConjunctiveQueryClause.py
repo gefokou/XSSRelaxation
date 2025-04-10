@@ -169,6 +169,7 @@ class ConjunctiveQuery:
         for clause in query.clauses:
             if clause not in new_query.clauses:
                 new_query.add_clause(clause)
+        # new_query.selected_vars = query.selected_vars.copy()
         return new_query
 
     def __repr__(self) -> str:

@@ -31,7 +31,8 @@ class ParallelRelaxationStrategy:
         self.Q = Q
         self.D = D
         self.k = k
-        self.Res = []            # List of repaired queries (results)
+        self.Res = []     # List of responses (results)
+        self.Req = []            # List of repaired queries (results)
         self.E = Queue()         # Queue of candidates from Delta (tuples (Q - x, x))
         self.Cand = Queue()      # Queue of relaxed candidates
 
@@ -86,6 +87,9 @@ class ParallelRelaxationStrategy:
             threads = []
             # Extract all candidates present in the E queue
             elements = list(self.E.queue)
+
+            # For each candidate, create a thread to perform relaxation
+            
             for candidate in elements:
                 thread = threading.Thread(target=relax_task, args=(candidate,))
                 threads.append(thread)
@@ -99,6 +103,9 @@ class ParallelRelaxationStrategy:
                 for relaxed_query in tmp_results.get(candidate, []):
                     self.Cand.put(relaxed_query)
 
+            # vider E
+            while not self.E.empty():
+                self.E.get()
     def consumer(self):
         """
         Consumer process according to Algorithm 4:
@@ -110,15 +117,12 @@ class ParallelRelaxationStrategy:
               and if it is not already in Res, then add it to Res.
             - Otherwise, re-enqueue x in E.
         """
-        element = list(self.Cand.queue)
-        for i in element:
-            print(i)
-            
         while len(self.Res) < self.k and not self.Cand.empty():
             candidate = self.Cand.get()
-            request=Query()
-            request.conjunction_query_union(candidate[0],candidate[1])
-            print(request)
+            req=Query()
+            request=req.conjunction_query_union(candidate[0],candidate[1])
+            request.selected_vars = self.Q.selected_vars.copy()
+            # Here we assume that candidate[0] is the relaxed query and candidate[1] is the clause to be added.
             # In our setting, candidate is assumed to be a repaired query (already the result of relaxing (Q - x) ∧ x).
             # We simulate an evaluation of candidate on D.
             eval_results = request.execute(self.D)
@@ -126,13 +130,14 @@ class ParallelRelaxationStrategy:
                 # If candidate is not already in Res, add it.
                 if eval_results not in self.Res:
                     self.Res.append(eval_results)
+                self.Req.append(request)   
             else:
                 # If evaluation is empty, re-enqueue candidate in E for further processing.
                 self.E.put(candidate)
             self.Cand.task_done()
 
 
-    def parallelxbs(self) -> list:
+    def parallelxbs(self):
         """
         Execute the complete parallel relaxation algorithm.
         
@@ -148,13 +153,10 @@ class ParallelRelaxationStrategy:
         # For each candidate from Delta(Q), enqueue (Q - x, x) into E.
         for candidate in self.delta():
             self.E.put(candidate)
-        
         # Start Producer and Consumer threads.
         producer_thread = threading.Thread(target=self.producer)
         consumer_thread = threading.Thread(target=self.consumer)
         producer_thread.start()
-        consumer_thread.start()
         producer_thread.join()
+        consumer_thread.start()
         consumer_thread.join()
-        
-        return self.Res

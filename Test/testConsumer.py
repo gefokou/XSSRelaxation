@@ -43,5 +43,8 @@ strategy.consumer()
 
 # Afficher le contenu de Res (les requêtes réparées)
 print("requetes reparees:")
+for rq in strategy.Req:
+    print(rq)
+print("resultats reparees:")
 for rq in strategy.Res:
     print(rq)

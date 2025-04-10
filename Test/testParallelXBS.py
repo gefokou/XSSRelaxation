@@ -30,5 +30,21 @@ k = 2
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationStrategy(query, D, k)
 strategy.parallelxbs()
-for rq in strategy.Res:
-    print(rq)
+
+print("Requetes reparées:")
+print("\n")
+for rq in strategy.Req:
+    print("\n")
+    print(rq.to_sparql())
+    print("\n \n")
+
+print("\n \n")
+
+# Afficher le contenu de Res 
+print("Resultats obtenus:")
+print("\n")
+for rs in strategy.Res:
+    print("results:")
+    print("\n")
+    print(rs.bindings)
+    print("\n \n")
