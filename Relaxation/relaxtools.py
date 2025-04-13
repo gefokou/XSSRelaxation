@@ -243,7 +243,7 @@ class TripleRelaxation:
 
     def reset(self):
         """Reset the relaxation iterator."""
-        self.current_elt = -1
+        self.current_elt = 1
 
 class ConjunctiveQueryRelaxation:
     def __init__(self, query: ConjunctiveQuery, graph: Graph, order=SIM_ORDER):
@@ -293,34 +293,60 @@ class ConjunctiveQueryRelaxation:
             all_relaxed_queries.append(new_query)
         
         return all_relaxed_queries
+    # @staticmethod
+    def is_relaxed_version_valid(self, relaxed_query: ConjunctiveQuery) -> bool:
+        """
+        Vérifie que pour chaque clause de la version relaxée de la requête conjonctive,
+        le triple (sujet, prédicat, objet) de la clause est différent de celui de la clause originale.
+        
+        On suppose que l'ordre des clauses dans les deux requêtes est le même.
+        
+        Args:
+            relaxed_query (ConjunctiveQuery): La version relaxée de la requête.
+            original_query (ConjunctiveQuery): La requête originale.
+            
+        Returns:
+            bool: True si toutes les clauses ont été modifiées (relaxées), False sinon.
+        """
+        # Vérifier le nombre de clauses
+        if len(relaxed_query.clauses) != len(self.query.clauses):
+            print("Le nombre de clauses diffère entre la version relaxée et l'originale.")
+            return False
+
+        # Comparer clause par clause
+        for i, (orig_clause, relax_clause) in enumerate(zip(self.query.clauses, relaxed_query.clauses)):
+            if orig_clause.triple == relax_clause.triple:
+                # print(f"La clause à l'indice {i} n'a pas été relaxée (triple identique).")
+                return False
+        return True
 
 # --- Exemple d'utilisation ---
 if __name__ == "__main__":
-    # Création d'une instance de ConjunctiveQuery avec plusieurs clauses.
-    cq = ConjunctiveQuery()
-    # On ajoute deux clauses, par exemple.
+    # Imaginons que vous avez créé une requête conjonctive originale.
+    original_query = ConjunctiveQuery()
     clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"),
                              URIRef("http://example.org/teacherOf"),
                              Literal("SW")))
     clause2 = SimpleLiteral((URIRef("http://example.org/s2"),
                              URIRef("http://example.org/nationality"),
                              Literal("US")))
-    cq.add_clause(clause1)
-    cq.add_clause(clause2)
+    original_query.add_clause(clause1)
+    original_query.add_clause(clause2)
+    G=Graph()
+    G.parse("graph.ttl", format="turtle")
+    # Supposons que vous ayez obtenu une version relaxée de la requête
+    # par l'intermédiaire de votre processus de relaxation, par exemple via ConjunctiveQueryRelaxation.
+    cqr = ConjunctiveQueryRelaxation(original_query, G, order=SIM_ORDER)
+    relaxed_versions = cqr.relax_query()
     
-    # Création d'une base de données RDF (peut être initialisée depuis un fichier ou construite dynamiquement)
-    g = Graph()
-    # Par exemple, pour charger un fichier Turtle, décommentez la ligne suivante :
-    g.parse("graph.ttl", format="turtle")
-    
-    # Instanciation du processus de relaxation pour la requête conjonctive
-    cqr = ConjunctiveQueryRelaxation(cq, g, order=SIM_ORDER)
-    relaxed_queries = cqr.relax_query()
-    relaxed_queries.pop(0)  # Suppression de la première requête (originale)
-    # Affichage des requêtes relaxées générées
-    print("Nombre de requêtes relaxées générées:", len(relaxed_queries))
-    for rq in relaxed_queries:
-        print(f"{[i for i in rq.clauses]}")
+    print("original_query")
+    print(original_query.to_sparql())
+    # Pour chaque version relaxée, on vérifie si toutes les clauses ont été relaxées.
+    for i, rq in enumerate(relaxed_versions):
+        valid = cqr.is_relaxed_version_valid(rq)
+        print(rq.to_sparql())
+        print(f"\n Version relaxée {i} valide ? {valid}")
+
 # ---------------------------
 # Example Usage
 # ---------------------------
