@@ -25,7 +25,7 @@ D = Graph()
 D.parse("graph.ttl", format="turtle")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 2
+k = 3
 
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationSmartStrategy(query, D, k)
@@ -48,3 +48,9 @@ for rs in strategy.Res:
     print("\n")
     print(rs.bindings)
     print("\n \n")
+print("Ensemble F:")
+
+for i in strategy.F:
+    print(i[0].to_sparql())
+    print("\n:")
+    print(i[1].to_sparql())

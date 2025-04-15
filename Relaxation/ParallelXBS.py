@@ -302,15 +302,15 @@ class ParallelRelaxationSmartStrategy:
             # Déqueue le premier élément de test
             i = test.pop(0)
             # Construire candidate_union = (xss ∧ i)
-            candidate_union = Query.conjunction_query_union(candidate[1], i)
+            candidate_union = Query.conjunction_query_union(i,candidate[1])
             # Si l'évaluation de candidate_union sur D est vide, alors:
             if not candidate_union.execute(self.D):
                 # Enfile i dans F
-                self.F.append(i)
+                self.F.append((i,candidate[1]))
                 # Pour chaque j restant dans test, si i est un sous-ensemble de j, retirer j de test.
                 new_test = []
                 for j in test:
-                    if not i.is_subqueries(j):
+                    if not i.is_subquery(j):
                         new_test.append(j)
                 test = new_test
             # Fin de while
@@ -338,7 +338,7 @@ class ParallelRelaxationSmartStrategy:
                 j = self.F[i]
                 # Vérifier si la sous-requête j est un sous-ensemble de x_prime.
                 # Nous supposons qu'une fonction is_subset(query1, query2) existe pour cela.
-                if j.is_subquery(x[0]):
+                if j[0].is_subquery(x[0]):
                     elig = False
                 i += 1
             if elig:
