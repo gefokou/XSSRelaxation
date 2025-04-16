@@ -25,7 +25,7 @@ D = Graph()
 D.parse("graph.ttl", format="turtle")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 2
+k = 3
 
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationStrategy(query, D, k)
@@ -34,8 +34,9 @@ strategy.parallelxbs()
 print("Requetes reparées:")
 print("\n")
 for rq in strategy.Req:
+    print(rq[0].to_sparql())
     print("\n")
-    print(rq.to_sparql())
+    print(f"similarity: {rq[1]}")
     print("\n \n")
 
 print("\n \n")
