@@ -1,5 +1,5 @@
 import threading
-from queue import Queue
+from queue import PriorityQueue, Queue
 from typing import List
 from rdflib import Graph, URIRef, Literal, RDFS, Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery as Query
@@ -7,6 +7,7 @@ from Query.SimpleLiteral import SimpleLiteral
 from Relaxation.XSSGenerator import XSSGenerator
 from Relaxation.relaxtools import ConjunctiveQueryRelaxation, TripleRelaxation
 import itertools
+from Relaxation.similarite import SimilarityCalculator as sim
 
 # ---------------------------
 # Constants and Global Counters
@@ -35,7 +36,8 @@ class ParallelRelaxationStrategy:
         self.Res = []     # List of responses (results)
         self.Req = []            # List of repaired queries (results)
         self.E = Queue()         # Queue of candidates from Delta (tuples (Q - x, x))
-        self.Cand = Queue()      # Queue of relaxed candidates
+        self.Cand = PriorityQueue()      # Queue of relaxed candidates
+        self.counter = itertools.count()  # Compteur global
 
     def delta(self) -> list:
         """
@@ -102,11 +104,14 @@ class ParallelRelaxationStrategy:
             # For each candidate, add its relaxed queries to Cand.
             for candidate in elements:
                 for relaxed_query in tmp_results.get(candidate, []):
-                    self.Cand.put(relaxed_query)
-
+                    similarity = sim(self.D)
+                    sim_value = similarity.query_similarity(candidate[0].clauses, relaxed_query[0].clauses)
+                    count = next(self.counter)
+                    self.Cand.put((-sim_value, count, relaxed_query))
             # vider E
             while not self.E.empty():
                 self.E.get()
+
     def consumer(self):
         """
         Consumer process according to Algorithm 4:
@@ -118,20 +123,22 @@ class ParallelRelaxationStrategy:
               and if it is not already in Res, then add it to Res.
             - Otherwise, re-enqueue x in E.
         """
+        similarity=sim(self.D)
         while len(self.Res) < self.k and not self.Cand.empty():
-            candidate = self.Cand.get()
+            priority, count, candidate = self.Cand.get()
             req=Query()
             request=req.conjunction_query_union(candidate[0],candidate[1])
             request.selected_vars = self.Q.selected_vars.copy()
             # Here we assume that candidate[0] is the relaxed query and candidate[1] is the clause to be added.
             # In our setting, candidate is assumed to be a repaired query (already the result of relaxing (Q - x) ∧ x).
             # We simulate an evaluation of candidate on D.
+            simval=similarity.query_similarity(self.Q.clauses, request.clauses)
             eval_results = request.execute(self.D)
             if eval_results:  # If evaluation is not empty
                 # If candidate is not already in Res, add it.
                 if eval_results not in self.Res:
                     self.Res.append(eval_results)
-                self.Req.append(request)   
+                self.Req.append((request,simval))   
             else:
                 # If evaluation is empty, re-enqueue candidate in E for further processing.
                 self.E.put(candidate)
@@ -180,7 +187,8 @@ class ParallelRelaxationSmartStrategy:
         self.Req = []     # List of repaired queries (results)
         self.F = []       # List of failure sub queries
         self.E = Queue()         # Queue of candidates from Delta (tuples (Q - x, x))
-        self.Cand = Queue()      # Queue of relaxed candidates
+        self.Cand = PriorityQueue()      # Queue of relaxed candidates
+        self.counter = itertools.count()  # Compteur global
 
     @staticmethod
     def generate_combinations(queries: List[Query]) -> List[Query]:
@@ -280,8 +288,10 @@ class ParallelRelaxationSmartStrategy:
             # For each candidate, add its relaxed queries to Cand.
             for candidate in elements:
                 for relaxed_query in tmp_results.get(candidate, []):
-                    self.Cand.put(relaxed_query)
-
+                    similarity = sim(self.D)
+                    sim_value = similarity.query_similarity(candidate[0].clauses, relaxed_query[0].clauses)
+                    count = next(self.counter)
+                    self.Cand.put((-sim_value, count, relaxed_query))
             # vider E
             while not self.E.empty():
                 self.E.get()
@@ -330,31 +340,33 @@ class ParallelRelaxationSmartStrategy:
                Sinon, on enfile à nouveau x dans E et on appelle GenFilter(x).
             5. Si elig est False, on réenfile x dans E.
         """
+        similarity=sim(self.D)
         while len(self.Res) < self.k and not self.Cand.empty():
-            x = self.Cand.get()  # x est un tuple (x_prime, x)
+            priority, count, candidate = self.Cand.get() # x est un tuple (sim, (Q - x, x))
             elig = True
             i = 0
             while i < len(self.F) and elig:
                 j = self.F[i]
                 # Vérifier si la sous-requête j est un sous-ensemble de x_prime.
                 # Nous supposons qu'une fonction is_subset(query1, query2) existe pour cela.
-                if j[0].is_subquery(x[0]):
+                if j[0].is_subquery(candidate[0]):
                     elig = False
                 i += 1
             if elig:
                 # On construit la requête candidate comme l'union (conjonction) de x_prime et x.
-                candidate_query = Query.conjunction_query_union(x[1], x[0])
+                candidate_query = Query.conjunction_query_union(candidate[1], candidate[0])
                 candidate_query.selected_vars = self.Q.selected_vars.copy()
                 results = candidate_query.execute(self.D)
+                simval=similarity.query_similarity(self.Q.clauses, candidate_query.clauses)
                 if results:
                     if results not in self.Res:
                         self.Res.append(results)
-                        self.Req.append(candidate_query)
+                    self.Req.append((candidate_query,simval))
                 else:
-                    self.E.put(x)
-                    self.GenFilter(x)
+                    self.E.put(candidate)
+                    self.GenFilter(candidate)
             else:
-                self.E.put(x)
+                self.E.put(candidate)
             self.Cand.task_done()
 
 
@@ -379,7 +391,11 @@ class ParallelRelaxationSmartStrategy:
             for i, cand in enumerate(relaxed_versions):
                 valid = cqr.is_relaxed_version_valid(cand)
                 if valid:
-                    self.Cand.put((cand, candidate[1]))
+                   similarity = sim(self.D) 
+                   sim_value = similarity.query_similarity(candidate[0].clauses, cand.clauses)
+                   count = next(self.counter)
+                   self.Cand.put((-sim_value, count, (cand, candidate[1])))
+            
         # Start Producer and Consumer threads.
         producer_thread = threading.Thread(target=self.producer)
         consumer_thread = threading.Thread(target=self.consumer)

@@ -34,8 +34,9 @@ strategy.parallelxbsv2()
 print("Requetes reparées:")
 print("\n")
 for rq in strategy.Req:
+    print(rq[0].to_sparql())
     print("\n")
-    print(rq.to_sparql())
+    print(f"similarity: {rq[1]}")
     print("\n \n")
 
 print("\n \n")
@@ -48,9 +49,10 @@ for rs in strategy.Res:
     print("\n")
     print(rs.bindings)
     print("\n \n")
-print("Ensemble F:")
 
-for i in strategy.F:
-    print(i[0].to_sparql())
-    print("\n:")
-    print(i[1].to_sparql())
+# print("Ensemble F:")
+
+# for i in strategy.F:
+#     print(i[0].to_sparql())
+#     print("\n:")
+#     print(i[1].to_sparql())
