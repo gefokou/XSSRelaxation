@@ -123,6 +123,14 @@ class ParallelRelaxationStrategy:
               and if it is not already in Res, then add it to Res.
             - Otherwise, re-enqueue x in E.
         """
+        elements = list(self.Cand.queue)
+        print(len(elements))
+        print("elements de Cnad:")
+        for i in elements:
+            print(i[2][0].to_sparql())
+            print("\n similarity:")
+            print(i[0])
+            print("\n")
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get()
             req=Query()
@@ -338,6 +346,15 @@ class ParallelRelaxationSmartStrategy:
                Sinon, on enfile à nouveau x dans E et on appelle GenFilter(x).
             5. Si elig est False, on réenfile x dans E.
         """
+        elements = list(self.Cand.queue)
+        print(len(elements))
+        print("elements de Cnad:")
+        for i in elements:
+            print(i[2][0].to_sparql())
+            print("\n similarity:")
+            print(i[0])
+            print("\n")
+
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get() # x est un tuple (sim, (Q - x, x))
             elig = True

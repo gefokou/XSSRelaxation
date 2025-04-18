@@ -92,34 +92,34 @@ class SimilarityCalculator:
 
 
 # --- Exemple d'utilisation ---
+if __name__ == "__main__":
+    # Création du graphe RDF
+    g = Graph()
+    g.parse("graph.ttl", format="turtle")  # Chargez vos données RDF
 
-# Création du graphe RDF
-g = Graph()
-g.parse("graph.ttl", format="turtle")  # Chargez vos données RDF
+    # Instanciation du calculateur avec le graphe
+    sim_calc = SimilarityCalculator(g)
 
-# Instanciation du calculateur avec le graphe
-sim_calc = SimilarityCalculator(g)
+    # Définition d'un triplet initial et d'un triplet relaxé
+    t1= SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/Lecturer")))
+    t1_prime = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), Variable("s")))
+    t2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Literal("SW")))
+    t2_prime = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Variable("c")))
 
-# Définition d'un triplet initial et d'un triplet relaxé
-t1= SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/Lecturer")))
-t1_prime = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), Variable("s")))
-t2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Literal("SW")))
-t2_prime = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Variable("c")))
+    q=ConjunctiveQuery()
+    q.add_clause(t1)
+    q.add_clause(t2)
 
-q=ConjunctiveQuery()
-q.add_clause(t1)
-q.add_clause(t2)
+    q_prime=ConjunctiveQuery()
+    q_prime.add_clause(t1_prime)
+    q_prime.add_clause(t2)
+    # Calcul de la similarité entre les deux triplets
 
-q_prime=ConjunctiveQuery()
-q_prime.add_clause(t1_prime)
-q_prime.add_clause(t2)
-# Calcul de la similarité entre les deux triplets
+    similarity = sim_calc.query_similarity(q.clauses, q_prime.clauses)
 
-similarity = sim_calc.query_similarity(q.clauses, q_prime.clauses)
+    # Affichage du résultat
+    print("Similarité entre les requêtes :")
+    print("Requête originale:", q.to_sparql())
+    print("Requête relaxée:", q_prime.to_sparql())
 
-# Affichage du résultat
-print("Similarité entre les requêtes :")
-print("Requête originale:", q.to_sparql())
-print("Requête relaxée:", q_prime.to_sparql())
-
-print("Similarity:", similarity)
+    print("Similarity:", similarity)
