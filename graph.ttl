@@ -6,7 +6,7 @@ ex:s1 a ex:Lecturer ;
     ex:age 45 ;
     ex:teacherOf "SW" .
 
-ex:s2 a ex:Lecturer ;
+ex:s2 a ex:Lecturer ;7
     ex:age 46 ;
     ex:nationality "US" .
 
