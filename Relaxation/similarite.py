@@ -2,6 +2,7 @@ import math
 from rdflib import Graph, Literal, URIRef, Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery
 from Query.SimpleLiteral import SimpleLiteral
+from Relaxation.relaxtools import ConjunctiveQueryRelaxation
 
 class SimilarityCalculator:
     def __init__(self, graph: Graph):
@@ -81,6 +82,32 @@ class SimilarityCalculator:
         :param relaxed_query: La requête relaxée, sous forme d'une liste de triplets correspondants.
         :return: La similarité globale (une valeur entre 0 et 1) entre les deux requêtes.
         """
+        list_match=[]
+        if len(query) != len(relaxed_query):
+            raise ValueError("Les requêtes doivent contenir le même nombre de patrons de triplet.")
+        for i in query:
+            for j in relaxed_query:
+                if i.label in j.label:
+                    list_match.append((i,j))
+        # print(list_match)
+        sim_values = [
+            self.sim_triple(t.triple, t_prime.triple)
+            for t, t_prime in list_match
+        ]
+        return sum(sim_values) / len(sim_values) if sim_values else 0
+        
+    def query_similarity2(self, query, relaxed_query):
+        """
+        Calcule la similarité globale entre deux requêtes conjonctives.
+        Chaque requête est représentée par une liste de triplets (patrons),
+        et la similarité globale est la moyenne des similarités calculées sur 
+        chaque patron de triplet correspondant.
+        
+        :param g: Le graphe RDF utilisé dans les calculs.
+        :param query: La requête initiale représentée par une liste de triplets (s, p, o).
+        :param relaxed_query: La requête relaxée, sous forme d'une liste de triplets correspondants.
+        :return: La similarité globale (une valeur entre 0 et 1) entre les deux requêtes.
+        """
         if len(query) != len(relaxed_query):
             raise ValueError("Les requêtes doivent contenir le même nombre de patrons de triplet.")
         
@@ -89,7 +116,6 @@ class SimilarityCalculator:
             for t, t_prime in zip(query, relaxed_query)
         ]
         return sum(sim_values) / len(sim_values) if sim_values else 0
-
 
 # --- Exemple d'utilisation ---
 if __name__ == "__main__":
@@ -113,13 +139,16 @@ if __name__ == "__main__":
     q_prime=ConjunctiveQuery()
     q_prime.add_clause(t1_prime)
     q_prime.add_clause(t2)
+    
+    cqr = ConjunctiveQueryRelaxation(q, g, order=1)
+    relaxed_versions = cqr.relax_query()
     # Calcul de la similarité entre les deux triplets
+    for i in relaxed_versions[0]:
+        similarity = sim_calc.query_similarity(q.clauses, i.clauses)
 
-    similarity = sim_calc.query_similarity(q.clauses, q_prime.clauses)
+        # Affichage du résultat
+        print("Similarité entre les requêtes :")
+        print("Requête originale:", q.to_sparql())
+        print("Requête relaxée:", i.to_sparql())
 
-    # Affichage du résultat
-    print("Similarité entre les requêtes :")
-    print("Requête originale:", q.to_sparql())
-    print("Requête relaxée:", q_prime.to_sparql())
-
-    print("Similarity:", similarity)
+        print("Similarity:", similarity)

@@ -83,9 +83,10 @@ class ParallelRelaxationStrategy:
                     results.append((i,candidate[1]))
                 # Here we assume that the first element of the result is the relaxed query.
                 if results:
-                    # Here we remove the original query if it is identical
-                    if results[0][0].clauses == self.Q.clauses:
-                        results.pop(0)
+                    results.pop(0)
+                    # # Here we remove the original query if it is identical
+                    # if results[0][0].clauses == self.Q.clauses:
+                    #     results.pop(0)
                 tmp_results[candidate] = results
 
             threads = []
@@ -103,12 +104,21 @@ class ParallelRelaxationStrategy:
                 thread.join()
 
             # For each candidate, add its relaxed queries to Cand.
+            req=Query()
             for candidate in elements:
                 for relaxed_query in tmp_results.get(candidate, []):
-                    sim_value = self.similarity.query_similarity(candidate[0].clauses, relaxed_query[0].clauses)
+                    request=req.conjunction_query_union(relaxed_query[0],candidate[1])
+                    sim_value = self.similarity.query_similarity(self.Q.clauses, request.clauses)
                     count = next(self.counter)
                     self.Cand.put((-sim_value, count, relaxed_query))
             # vider E
+            # elem=list(self.Cand.queue)
+            # for i in elem:
+            #     print(i[2][0].to_sparql())
+            #     print("\n similarity:")
+            #     print(i[0])
+            #     print("\n")
+
             while not self.E.empty():
                 self.E.get()
 
@@ -124,15 +134,20 @@ class ParallelRelaxationStrategy:
             - Otherwise, re-enqueue x in E.
         """
         elements = list(self.Cand.queue)
-        print(len(elements))
-        print("elements de Cnad:")
-        for i in elements:
-            print(i[2][0].to_sparql())
-            print("\n similarity:")
-            print(i[0])
-            print("\n")
+        # print(len(elements))
+        # print("\n requetes candidates:\n")
+        # for i in elements:
+        #     print(i[2][0].to_sparql())
+        #     print("\n similarity:")
+        #     print(i[0])
+        #     print("\n")
+        print("\n requetes candidates:\n")
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get()
+            print(candidate[0].to_sparql())
+            print("\n similarity:")
+            print(priority)
+            print("\n")
             req=Query()
             request=req.conjunction_query_union(candidate[0],candidate[1])
             request.selected_vars = self.Q.selected_vars.copy()
@@ -241,7 +256,12 @@ class ParallelRelaxationSmartStrategy:
         delta_list = []
         # XSSGenerator.compute_xss(Q, D) returns the list of candidate clauses.
         Xss = XSSGenerator.compute_xss(self.Q, self.D)
-        print(f"\nXss: {Xss}")
+
+        print(f"\nXSS trouvees\n")
+        for i, xss in enumerate(Xss, 1):
+            print(f"XSS {i}:")
+            print([j.label for j in xss.clauses])
+            print("-"*50)
         for xss in Xss:
             # Q.remove_clause(xss) returns a new query without clause xss.
             # Here we assume Q.clauses is a list; we compute the difference.
@@ -273,9 +293,10 @@ class ParallelRelaxationSmartStrategy:
                     results.append((i,candidate[1]))
                 # Here we assume that the first element of the result is the relaxed query.
                 if results:
-                    # Here we remove the original query if it is identical
-                    if results[0][0].clauses == self.Q.clauses:
-                        results.pop(0)
+                    results.pop(0)
+                    # # Here we remove the original query if it is identical
+                    # if results[0][0].clauses == self.Q.clauses:
+                    #     results.pop(0)
                 tmp_results[candidate] = results
 
             threads = []
@@ -293,12 +314,21 @@ class ParallelRelaxationSmartStrategy:
                 thread.join()
 
             # For each candidate, add its relaxed queries to Cand.
+            req=Query()
             for candidate in elements:
                 for relaxed_query in tmp_results.get(candidate, []):
-                    sim_value = self.similarity.query_similarity(candidate[0].clauses, relaxed_query[0].clauses)
+                    request=req.conjunction_query_union(relaxed_query[0],candidate[1])
+                    sim_value = self.similarity.query_similarity(self.Q.clauses, request.clauses)
                     count = next(self.counter)
                     self.Cand.put((-sim_value, count, relaxed_query))
             # vider E
+            # elem=list(self.Cand.queue)
+            # for i in elem:
+            #     print(i[2][0].to_sparql())
+            #     print("\n similarity:")
+            #     print(i[0])
+            #     print("\n")
+
             while not self.E.empty():
                 self.E.get()
 
@@ -347,16 +377,20 @@ class ParallelRelaxationSmartStrategy:
             5. Si elig est False, on réenfile x dans E.
         """
         elements = list(self.Cand.queue)
-        print(len(elements))
-        print("elements de Cnad:")
-        for i in elements:
-            print(i[2][0].to_sparql())
-            print("\n similarity:")
-            print(i[0])
-            print("\n")
+        # print(len(elements))
+        print("\n requetes candidates:\n")
+        # for i in elements:
+        #     print(i[2][0].to_sparql())
+        #     print("\n similarity:")
+        #     print(i[0])
+        #     print("\n")
 
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get() # x est un tuple (sim, (Q - x, x))
+            print(candidate[0].to_sparql())
+            print("\n similarity:")
+            print(priority)
+            print("\n")
             elig = True
             i = 0
             while i < len(self.F) and elig:
@@ -401,11 +435,12 @@ class ParallelRelaxationSmartStrategy:
         for candidate in self.delta():
             cqr = ConjunctiveQueryRelaxation(candidate[0], self.D, order=1)
             relaxed_versions = cqr.relax_query()
-      
+            req=Query()
             for i, cand in enumerate(relaxed_versions):
                 valid = cqr.is_relaxed_version_valid(cand)
                 if valid:
-                   sim_value = self.similarity.query_similarity(candidate[0].clauses, cand.clauses)
+                   request=req.conjunction_query_union(cand,candidate[1])
+                   sim_value = self.similarity.query_similarity(self.Q.clauses, request.clauses)
                    count = next(self.counter)
                    self.Cand.put((-sim_value, count, (cand, candidate[1])))
             

@@ -15,10 +15,10 @@ class ConjunctiveQuery:
         self.clauses.append(clause)
         self.selected_vars.update(clause.mentioned_vars)
 
-    def add_filter(self, filter_clause: FilterLiteral):
-        """Ajoute une clause FilterLiteral (filtre) à la requête et met à jour les variables sélectionnées."""
-        self.filters.append(filter_clause)
-        self.selected_vars.update(filter_clause.mentioned_vars)
+    # def add_filter(self, filter_clause: FilterLiteral):
+    #     """Ajoute une clause FilterLiteral (filtre) à la requête et met à jour les variables sélectionnées."""
+    #     self.filters.append(filter_clause)
+    #     self.selected_vars.update(filter_clause.mentioned_vars)
 
     def set_selected_variables(self, variables: List[str]):
         """Définit explicitement les variables à récupérer dans le SELECT."""
@@ -144,9 +144,9 @@ class ConjunctiveQuery:
                 return False
         
         # Vérification des filtres
-        for fl in self.filters:
-            if not any(fl.filter_expr == other_fl.filter_expr for other_fl in other.filters):
-                return False
+        # for fl in self.filters:
+        #     if not any(fl.filter_expr == other_fl.filter_expr for other_fl in other.filters):
+        #         return False
                 
         return True
     

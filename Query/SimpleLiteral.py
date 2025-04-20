@@ -19,7 +19,8 @@ class SimpleLiteral:
         for component in triple:
             if isinstance(component, Variable):
                 self.mentioned_vars.add(str(component))
-
+    def set_label(self,label,num):
+        self.label=f"{label}({num})"
     @property
     def clause_type(self) -> str:
         return "SIMPLE_CLAUSE"

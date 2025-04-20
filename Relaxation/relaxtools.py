@@ -259,7 +259,7 @@ class ConjunctiveQueryRelaxation:
         self.graph = graph
         self.order = order
 
-    def relax_query(self) -> list:
+    def relax_query(self):
         """
         Génère des versions relaxées de la requête conjonctive en relaxant chacune de ses clauses.
         
@@ -268,8 +268,8 @@ class ConjunctiveQueryRelaxation:
         """
         # Pour chaque clause de la requête, on récupère la liste des clauses relaxées
         relaxed_versions_per_clause = []
-        
         for clause in self.query.clauses:
+            num=0
             # On crée une instance de TripleRelaxation pour la clause
             triple_relax = TripleRelaxation(clause, self.graph, order=self.order)
             # Liste des versions relaxées pour cette clause
@@ -278,6 +278,8 @@ class ConjunctiveQueryRelaxation:
                 relaxed_triple = triple_relax.next_relaxed_triple()
                 # On suppose que relaxed_triple.query.clauses[0] contient la clause relaxée
                 relaxed_clause = relaxed_triple.query.clauses[0]
+                relaxed_clause.set_label(clause.label,num)
+                num+=1
                 relaxed_clause_list.append(relaxed_clause)
             # Si aucune version relaxée n'a été générée pour une clause, on garde la clause originale
             if not relaxed_clause_list:
@@ -324,12 +326,8 @@ class ConjunctiveQueryRelaxation:
 if __name__ == "__main__":
     # Imaginons que vous avez créé une requête conjonctive originale.
     original_query = ConjunctiveQuery()
-    clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"),
-                             URIRef("http://example.org/teacherOf"),
-                             Literal("SW")))
-    clause2 = SimpleLiteral((URIRef("http://example.org/s2"),
-                             URIRef("http://example.org/nationality"),
-                             Literal("US")))
+    clause1 = SimpleLiteral((Variable("p"), URIRef("http://example.org/nationality"), Variable("n")))
+    clause2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/age"), Literal(46)))
     original_query.add_clause(clause1)
     original_query.add_clause(clause2)
     G=Graph()
@@ -346,6 +344,13 @@ if __name__ == "__main__":
         valid = cqr.is_relaxed_version_valid(rq)
         print(rq.to_sparql())
         print(f"\n Version relaxée {i} valide ? {valid}")
+    
+    # for x in relaxed_versions[1]:
+    #     print("\n Clause:\n")
+    #     print(x.to_sparql())
+    #     print("\n relaxed Clause\n")
+    #     for y in relaxed_versions[1][x]:
+    #         print(y.to_sparql())
 
 # ---------------------------
 # Example Usage
