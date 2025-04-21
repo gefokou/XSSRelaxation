@@ -21,9 +21,9 @@ g.add((ex.s2, RDF.type, ex.Lecturer))
 g.add((ex.s2, ex.nationality, Literal("US")))
 g.add((ex.s2, ex.age, Literal(46)))
 
-g.add((ex.s3, RDF.type, ex.FullProfessor))
-g.add((ex.s3, ex.teacherOf, Literal("DB")))
-g.add((ex.s3, ex.age, Literal(46)))
+g.add((ex.s3, RDF.type, ex.Lecturer))
+g.add((ex.s3, ex.teacherOf, Literal("SW")))
+g.add((ex.s3, ex.age, Literal(43)))
 
 # Ajout du triplet indiquant que ex.FullProfessor est une sous-classe de ex.Lecturer
 g.add((ex.FullProfessor, RDFS.subClassOf, ex.Lecturer))
