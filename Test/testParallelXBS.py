@@ -25,7 +25,7 @@ D = Graph()
 D.parse("graph.ttl", format="turtle")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 2
+k = 4
 
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationStrategy(query, D, k)
@@ -47,7 +47,7 @@ print("\n")
 for rs in strategy.Res:
     print("results:")
     print("\n")
-    print(rs.bindings)
+    print(rs)
     print("\n \n")
 
 print("Statistiques de la methode: \n")

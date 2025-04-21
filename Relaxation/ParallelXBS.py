@@ -114,14 +114,16 @@ class ParallelRelaxationStrategy:
             request = req.conjunction_query_union(candidate[0], candidate[1])
             request.selected_vars = self.Q.selected_vars.copy()
             simval = self.similarity.query_similarity(self.Q.clauses, request.clauses)
-            eval_results = request.execute(self.D)
+            results = request.execute(self.D)
             self.query_exec_count += 1  # Increment query execution counter
-            if eval_results:
-                if eval_results not in self.Res:
-                    self.Res.append(eval_results)
+            if results:
+                for i in results.bindings:
+                    if i not in self.Res and len(self.Res) < self.k:
+                        self.Res.append(i)
                 self.Req.append((request, simval))
             else:
                 self.E.put(candidate)
+            
             self.Cand.task_done()
 
     def parallelxbs(self):
@@ -288,8 +290,9 @@ class ParallelRelaxationSmartStrategy:
                 self.query_exec_count += 1  # Increment query execution counter
                 simval = self.similarity.query_similarity(self.Q.clauses, candidate_query.clauses)
                 if results:
-                    if results not in self.Res:
-                        self.Res.append(results)
+                    for i in results.bindings:
+                        if i not in self.Res and len(self.Res) < self.k:
+                            self.Res.append(i)
                     self.Req.append((candidate_query, simval))
                 else:
                     self.E.put(candidate)
