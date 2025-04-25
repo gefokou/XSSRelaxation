@@ -21,18 +21,11 @@ from Relaxation.parser2 import expand_sparql
 # query.selected_vars = {"p", "n"}
 # print(query.to_sparql())
 sparql_query = """
-    PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX ex:   <http://example.org/>
-    PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
-
-    SELECT ?p ?n
-    {
-      ?p rdf:type      ex:Lecturer;
-         ex:nationality ?n;
-         ex:teacherOf   "SW";
-         ex:age         "46"^^xsd:integer .
-    }
-    """
+prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select ?x {
+  ?x a ub:GraduateStudent;
+    ub:takesCourse <http://www.Department0.University0.edu/GraduateCourse0>.
+}"""
 devquery=expand_sparql(sparql_query)
 parser = SparqlTripletParser(devquery)
 parser.parse()
@@ -41,7 +34,7 @@ print("Requête conjonctive :")
 print(query.to_sparql())
 # Create an RDF graph D (can be loaded or built dynamically)
 D = Graph()
-D.parse("graph.ttl", format="turtle")  # Uncomment if you have a file
+D.parse("Experimentation/univ-bench.owl")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
 k = 4

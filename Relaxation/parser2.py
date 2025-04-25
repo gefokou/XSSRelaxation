@@ -136,6 +136,9 @@ def expand_sparql(query):
                     j += 1
                 term = where_content[i:j]
                 i = j
+            # elif ch == 'a':
+            #     term = 'a'
+            #     i += 1
             else:
                 # Pour 'a' ou nom préfixé
                 j = i
@@ -191,7 +194,10 @@ def expand_sparql(query):
     output_lines.append("WHERE {")
     for s, p, o in triples:
         s_exp = expand_term(s)
-        p_exp = expand_term(p)
+        if p == 'a':
+            p_exp = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>'
+        else:
+            p_exp = expand_term(p)
         o_exp = expand_term(o)
         output_lines.append(f"    {s_exp} {p_exp} {o_exp} .")
     output_lines.append("}")
