@@ -30,4 +30,4 @@ g.add((ex.FullProfessor, RDFS.subClassOf, ex.Lecturer))
 
 
 # Sérialisation du graph au format Turtle dans un fichier "graph.ttl"
-g.serialize(destination='graph.ttl', format='turtle')
+g.serialize(destination='graph.owl', format='turtle')
