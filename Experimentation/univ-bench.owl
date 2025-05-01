@@ -13,6 +13,8 @@
   </owl:Class>
 
   <owl:Class rdf:ID="Article">
+
+  
     <rdfs:label>article</rdfs:label>
     <rdfs:subClassOf rdf:resource="#Publication"/>
   </owl:Class>
