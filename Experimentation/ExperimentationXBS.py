@@ -20,13 +20,18 @@ from Relaxation.parser2 import expand_sparql
 # query.add_clause(t4)
 # query.selected_vars = {"p", "n"}
 # print(query.to_sparql())
+
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 select ?x {
-  ?x a ub:GraduateStudent;
-    ub:takesCourse <http://www.Department0.University0.edu/GraduateCourse0>.
+  ?x a ub:Publication;
+    ub:publicationAuthor <http://www.Department0.University0.edu/AssistantProfessor0>.
 }"""
+
 devquery=expand_sparql(sparql_query)
+print("\nRequête SPARQL développée :")
+print(devquery)
+
 parser = SparqlTripletParser(devquery)
 parser.parse()
 query= parser.query

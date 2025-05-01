@@ -56,7 +56,7 @@ def get_super_classes(uri, graph):
     for _, _, super_class in graph.triples((uri, RDFS.subClassOf, None)):
         super_classes[super_class] = 1
     if not super_classes:
-        default_super = URIRef(str(uri).replace("P", "SuperP"))
+        default_super = URIRef(str(uri))
         super_classes[default_super] = 1
     return super_classes
 
@@ -71,7 +71,7 @@ def get_super_properties(uri, graph):
     for _, _, super_property in graph.triples((uri, RDFS.subPropertyOf, None)):
         super_properties[super_property] = 1
     if not super_properties:
-        default_super = URIRef(str(uri).replace("P", "SuperP"))
+        default_super = URIRef(uri)
         super_properties[default_super] = 1
     return super_properties
 
@@ -326,12 +326,12 @@ class ConjunctiveQueryRelaxation:
 if __name__ == "__main__":
     # Imaginons que vous avez créé une requête conjonctive originale.
     original_query = ConjunctiveQuery()
-    clause1 = SimpleLiteral((Variable("p"), URIRef("http://example.org/nationality"), Variable("n")))
+    clause1 = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/FullProfessor")))
     clause2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/age"), Literal(46)))
     original_query.add_clause(clause1)
     original_query.add_clause(clause2)
     G=Graph()
-    G.parse("graph.ttl", format="turtle")
+    G.parse("graph.owl", format="xml")
     # Supposons que vous ayez obtenu une version relaxée de la requête
     # par l'intermédiaire de votre processus de relaxation, par exemple via ConjunctiveQueryRelaxation.
     cqr = ConjunctiveQueryRelaxation(original_query, G, order=SIM_ORDER)

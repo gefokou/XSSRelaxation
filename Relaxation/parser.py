@@ -1,18 +1,15 @@
-from typing import List, Tuple, Set
-
+from typing import List, Set
+import re
 from rdflib import URIRef, Literal as RDFLiteral, Variable as RDFVariable
 from Query.SimpleLiteral import SimpleLiteral
 from Query.ConjunctiveQueryClause import ConjunctiveQuery
 
 class SparqlTripletParser:
     """
-    Extrait les triplets (subject, predicate, object) d'une requête SPARQL
-    et les convertit en instances SimpleLiteral avec types RDF adaptés.
+    Extrait les triplets (subject, predicate, object) d'une requête SPARQL,
+    convertit en SimpleLiteral, et récupère les variables depuis SELECT.
     """
     def __init__(self, query: str):
-        """
-        :param query: chaîne SPARQL complète contenant un bloc WHERE { ... }
-        """
         self.query_string: str = query
         self.triple_patterns: List[SimpleLiteral] = []
         self.variables: Set[str] = set()
@@ -20,79 +17,79 @@ class SparqlTripletParser:
 
     def parse(self) -> None:
         """
-        Analyse la requête SPARQL et construit:
-        - une liste de SimpleLiteral((s,p,o))
-        - un ConjunctiveQuery avec clauses ajoutées
-        - l'ensemble des variables sans '?'
+        1. Extrait les variables de la clause SELECT (sans '?').
+        2. Parcourt le bloc WHERE pour créer les SimpleLiteral.
+        3. Remplit self.query.selected_vars et self.query.clauses.
         """
-        # Extraire contenu entre { et }
+        # --- 1. Extraction des variables depuis SELECT ... WHERE ---
+        m = re.search(r'(?i)SELECT\s+(.*?)\s+WHERE', self.query_string, re.DOTALL)
+        if not m:
+            raise ValueError("Clause SELECT introuvable ou mal formée")
+        select_part = m.group(1)
+        # toutes les occurrences de ?var
+        self.variables = {var[1:] for var in re.findall(r'\?[A-Za-z0-9_]+', select_part)}
+        self.query.selected_vars =self.variables
+
+        # --- 2. Extraction du bloc WHERE ---
         start = self.query_string.find('{')
         end   = self.query_string.rfind('}')
-        if start < 0 or end < 0:
+        if start < 0 or end < 0 or start >= end:
             raise ValueError("Bloc WHERE mal formé")
-        body = self.query_string[start+1:end]
+        body = self.query_string[start+1:end].strip()
 
-        # Parcours ligne par ligne
+        # --- 3. Parcours ligne par ligne des triplets ---
         for line in body.splitlines():
             line = line.strip().rstrip('.')
             if not line:
                 continue
-            parts = line.split(None, 2)
+            parts = line.split(None, 2)  # sujet, prédicat, objet
             if len(parts) != 3:
                 raise ValueError(f"Pattern à 3 termes attendu, trouvé: {parts}")
             subj_str, pred_str, obj_str = parts
+
             subj = self._convert_term(subj_str)
             pred = self._convert_term(pred_str)
             obj  = self._convert_term(obj_str)
 
-            # Construire le SimpleLiteral et l'ajouter
             triple = SimpleLiteral((subj, pred, obj))
             self.triple_patterns.append(triple)
             self.query.add_clause(triple)
 
-            # Recenser variables
-            for term in (subj, obj):
-                if isinstance(term, RDFVariable):
-                    self.variables.add(str(term))
-
-        # Stocker les variables sélectionnées
-        self.query.selected_vars = {v for v in self.variables}
-
     def _convert_term(self, term: str):
         """
-        Convertit une chaîne SPARQL en instance RDF:
-        - '?v'          -> RDFVariable('v')
-        - '"..."^^<...>' -> RDFLiteral(val, datatype=URIRef)
-        - '"..."'     -> RDFLiteral(val)
-        - sinon        -> URIRef(term)
+        Convertit une chaîne SPARQL en instance RDF :
+          - '?v'          -> RDFVariable('v')
+          - '"..."^^<...>' -> RDFLiteral(val, datatype=URIRef)
+          - '"..."'       -> RDFLiteral(val)
+          - sinon         -> URIRef(term)
         """
         # Variable SPARQL
         if term.startswith('?'):
             return RDFVariable(term[1:])
-        # Typé littéral
+        # Littéral typé
         if term.startswith('"'):
-            # Ex: "46"^^<...>
+            # Type ^^<URI>
             if '^^<' in term:
                 value_part, dtype_part = term.split('^^', 1)
-                value = value_part.strip('" "')
+                val = value_part.strip('"')
+                # Cast int si possible
+                if val.isdigit():
+                    val = int(val)
                 dtype = URIRef(dtype_part.strip('<>'))
-                # caster numérique si possible
-                try:
-                    if value.isdigit():
-                        value = int(value)
-                except Exception:
-                    pass
-                return RDFLiteral(value)
+                return RDFLiteral(val, datatype=dtype)
             # Littéral simple
-            return RDFLiteral(term.strip('" "'))
+            return RDFLiteral(term.strip('"'))
         # URIRef
-        return URIRef(term.strip('< >'))
+        clean = term.strip().strip('<>').strip()
+        # 2) on crée l'URIRef
+        return URIRef(clean)
 
     def get_triple_patterns(self) -> List[SimpleLiteral]:
         return self.triple_patterns
 
     def get_variables(self) -> Set[str]:
         return self.variables
+
 
 # # Exemple d'utilisation
 # if __name__ == '__main__':
@@ -113,12 +110,14 @@ class SparqlTripletParser:
 
 # Exemple d'utilisation:
 if __name__ == '__main__':
-    sparql_query = '''SELECT ?p ?n
+    sparql_query = '''SELECT ?x ?y ?z
 WHERE {
-?p <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Lecturer> .
-?p <http://example.org/nationality> ?n . 
-?p <http://example.org/teacherOf> "SW" .
-?p <http://example.org/age> "46"^^<http://www.w3.org/2001/XMLSchema#integer> .
+    ?x <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#GraduateStudent> .   
+    ?x <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#undergraduateDegreeFrom> ?y .
+    ?x <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#memberOf> ?z .
+    ?y <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#University> .     
+    ?z <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#Department> .     
+    ?z <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#subOrganizationOf> ?y .
 }'''
 
     parser = SparqlTripletParser(sparql_query)

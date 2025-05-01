@@ -13,16 +13,16 @@ class ConjunctiveQuery:
     def add_clause(self, clause: SimpleLiteral):
         """Ajoute une clause SimpleLiteral (triplet) à la requête et met à jour les variables sélectionnées."""
         self.clauses.append(clause)
-        self.selected_vars.update(clause.mentioned_vars)
+        # self.selected_vars.update(clause.mentioned_vars)
 
     # def add_filter(self, filter_clause: FilterLiteral):
     #     """Ajoute une clause FilterLiteral (filtre) à la requête et met à jour les variables sélectionnées."""
     #     self.filters.append(filter_clause)
     #     self.selected_vars.update(filter_clause.mentioned_vars)
 
-    def set_selected_variables(self, variables: List[str]):
+    def set_selected_variables(self, variables: set()):
         """Définit explicitement les variables à récupérer dans le SELECT."""
-        self.selected_vars = set(variables)
+        self.selected_vars = variables
 
     @property
     def is_star_query(self) -> bool:
