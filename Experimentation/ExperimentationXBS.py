@@ -21,16 +21,15 @@ from Relaxation.parser2 import expand_sparql
 # query.selected_vars = {"p", "n"}
 # print(query.to_sparql())
 
-sparql_query = """
-prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+sparql_query = """prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 select ?x {
-  ?x a ub:Publication;
-    ub:publicationAuthor <http://www.Department0.University0.edu/AssistantProfessor0>.
+  ?x a ub:Student;
+    ub:takesCourse <http://www.Department0.University0.edu/GraduateCourse0>.
 }"""
 
 devquery=expand_sparql(sparql_query)
-print("\nRequête SPARQL développée :")
-print(devquery)
+# print("\nRequête SPARQL développée :")
+# print(devquery)
 
 parser = SparqlTripletParser(devquery)
 parser.parse()
@@ -39,10 +38,10 @@ print("Requête conjonctive :")
 print(query.to_sparql())
 # Create an RDF graph D (can be loaded or built dynamically)
 D = Graph()
-D.parse("Experimentation/univ-bench.owl")  # Uncomment if you have a file
+D.parse("Experimentation/Uni1.owl")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 4
+k = 10
 
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationStrategy(query, D, k)

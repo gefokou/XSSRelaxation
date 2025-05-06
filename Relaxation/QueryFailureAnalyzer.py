@@ -21,7 +21,34 @@ class QueryFailureAnalyzer:
         except Exception as e:
             print(f"Erreur lors de l'exécution de la requête : {e}")
         return nb_solution <= k
+    
+    
+    @staticmethod
+    def find_all_failing_causes(query, graph: Graph) -> List['ConjunctiveQuery']:
+        """
+        Recherche exhaustive de toutes les MFS d'une requête (coût potentiellement 2^n).
+        """
+        all_mfs = []
+        if not QueryFailureAnalyzer.not_k_completed(query.to_sparql(), graph):
+            return all_mfs
 
+        if len(query.clauses) == 1:
+            all_mfs.append(query.clone())
+            return all_mfs
+
+        is_mfs = True
+        for element in list(query.clauses):
+            query.remove(element)
+            current_all_mfs = QueryFailureAnalyzer.find_all_failing_causes(query, graph)
+            if current_all_mfs:
+                is_mfs = False
+                for one_mfs in current_all_mfs:
+                    if not any(old_mfs.is_subquery(one_mfs) for old_mfs in all_mfs):
+                        all_mfs.append(one_mfs)
+            query.add(element,len(query.clauses))
+        if is_mfs:
+            all_mfs.append(query.clone())
+        return all_mfs
     # @staticmethod
     # def find_a_failing_cause(query, graph: Graph) -> Optional['ConjunctiveQuery']:
     #     """
@@ -77,29 +104,4 @@ class QueryFailureAnalyzer:
     #     query.add(0, element)
     #     return core
 
-    @staticmethod
-    def find_all_failing_causes(query, graph: Graph) -> List['ConjunctiveQuery']:
-        """
-        Recherche exhaustive de toutes les MFS d'une requête (coût potentiellement 2^n).
-        """
-        all_mfs = []
-        if not QueryFailureAnalyzer.not_k_completed(query.to_sparql(), graph):
-            return all_mfs
-
-        if len(query.clauses) == 1:
-            all_mfs.append(query.clone())
-            return all_mfs
-
-        is_mfs = True
-        for element in list(query.clauses):
-            query.remove(element)
-            current_all_mfs = QueryFailureAnalyzer.find_all_failing_causes(query, graph)
-            if current_all_mfs:
-                is_mfs = False
-                for one_mfs in current_all_mfs:
-                    if not any(old_mfs.is_subquery(one_mfs) for old_mfs in all_mfs):
-                        all_mfs.append(one_mfs)
-            query.add(element,len(query.clauses))
-        if is_mfs:
-            all_mfs.append(query.clone())
-        return all_mfs
+    

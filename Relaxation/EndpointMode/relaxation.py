@@ -1,13 +1,12 @@
 import itertools
-import rdflib
-from rdflib import Graph, URIRef, Literal, Variable
+import math
+from SPARQLWrapper import SPARQLWrapper, JSON
+from rdflib import BNode, URIRef, Literal, RDFS
+from rdflib.term import Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery
 from Query.SimpleLiteral import SimpleLiteral
-from rdflib import RDFS
-
 from Relaxation.parser import SparqlTripletParser
 from Relaxation.parser2 import expand_sparql
-from Relaxation.similarite import SimilarityCalculator as Sim
 # ---------------------------
 # Constants and Global Counters
 # ---------------------------
@@ -48,35 +47,72 @@ def similarity_measure_property(original_node, relaxed_node):
         return 0.9
     return 0.9  # Default for superproperty or other relaxations
 
-def get_super_classes(uri, graph):
+
+def get_super_classes(uri: URIRef, endpoint: SPARQLWrapper) -> dict:
     """
-    Retrieve superclasses for a URIRef from the graph.
-    Returns a dict {superclass: relaxation_level}.
+    Interroge le endpoint SPARQL pour récupérer les superclasses de `uri`.
+    Renvoie un dict {superclass: relaxation_level}.
     """
     if not isinstance(uri, URIRef):
         return {}
+
+    # Construire et exécuter la requête SPARQL
+    query = f"""
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?sup WHERE {{
+      <{uri}> rdfs:subClassOf ?sup .
+    }}
+    """
+    endpoint.setQuery(query)
+    endpoint.setReturnFormat(JSON)
+    results = endpoint.query().convert()
+
     super_classes = {}
-    for _, _, super_class in graph.triples((uri, RDFS.subClassOf, None)):
-        super_classes[super_class] = 1
+    # Pour chaque binding, on ajoute la super-classe avec un niveau de relaxation = 1
+    for binding in results["results"]["bindings"]:
+        if binding["sup"]["type"] == "uri":
+            # On vérifie que le type est bien une URI
+            # On récupère l'URI de la super-classe
+            sup_uri = binding["sup"]["value"]
+            super_classes[URIRef(sup_uri)] = 1
+        else:
+            sup_bnode = binding["sup"]["value"]
+            super_classes[BNode(sup_bnode)] = 1
+    # Si aucune super-classe trouvée, on renvoie la classe elle-même
     if not super_classes:
-        default_super = URIRef(str(uri))
-        super_classes[default_super] = 1
+        super_classes[uri] = 1
+
     return super_classes
 
-def get_super_properties(uri, graph):
+
+def get_super_properties(uri: URIRef, endpoint: SPARQLWrapper) -> dict:
     """
-    Retrieve superproperties for a URIRef from the graph.
-    Returns a dict {superproperty: relaxation_level}.
+    Interroge le endpoint SPARQL pour récupérer les superproperties de `uri`.
+    Renvoie un dict {superproperty: relaxation_level}.
     """
     if not isinstance(uri, URIRef):
         return {}
+
+    query = f"""
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?sup WHERE {{
+      <{uri}> rdfs:subPropertyOf ?sup .
+    }}
+    """
+    endpoint.setQuery(query)
+    endpoint.setReturnFormat(JSON)
+    results = endpoint.query().convert()
+
     super_properties = {}
-    for _, _, super_property in graph.triples((uri, RDFS.subPropertyOf, None)):
-        super_properties[super_property] = 1
+    for binding in results["results"]["bindings"]:
+        sup_uri = binding["sup"]["value"]
+        super_properties[URIRef(sup_uri)] = 1
+
     if not super_properties:
-        default_super = URIRef(uri)
-        super_properties[default_super] = 1
+        super_properties[uri] = 1
+
     return super_properties
+
 
 # ---------------------------
 # Relaxed Node Class
@@ -118,14 +154,15 @@ class NodeRelaxed:
 # Triple Relaxation Class
 # ---------------------------
 class TripleRelaxation:
-    def __init__(self, clause, graph, order=SIM_ORDER):
+    def __init__(self, clause, graph:str, order=SIM_ORDER):
         """
         clause: RDF triple as a tuple (subject, predicate, object) using rdflib.
         graph: RDF graph (rdflib.Graph).
         order: Relaxation order (SIM_ORDER by default).
         """
         global num_resource_release, num_pred_release
-        self.graph = graph  # Changed from session to graph for clarity
+        self.graph = SPARQLWrapper(graph)  # Changed from session to graph for clarity
+        self.graph.setReturnFormat(JSON)
         self.current_clause = clause
         self.relaxation_order = order
         self.subject_var = None
@@ -249,7 +286,7 @@ class TripleRelaxation:
         self.current_elt = 1
 
 class ConjunctiveQueryRelaxation:
-    def __init__(self, query: ConjunctiveQuery, graph: Graph, order=SIM_ORDER):
+    def __init__(self, query: ConjunctiveQuery, graph:str, order=SIM_ORDER):
         """
         Initialise la relaxation d'une requête conjonctive.
         
@@ -325,60 +362,26 @@ class ConjunctiveQueryRelaxation:
                 return False
         return True
 
-# --- Exemple d'utilisation ---
-if __name__ == "__main__":
-    # Imaginons que vous avez créé une requête conjonctive originale.
-    sparql_query = """
-    prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x {
-  ?x a ub:Student.
-}"""
-    devquery=expand_sparql(sparql_query)
-    parser = SparqlTripletParser(devquery)
-    parser.parse()
-    query= parser.query
-    G=Graph()
-    G.parse("Experimentation/Uni1.owl")
-    # Supposons que vous ayez obtenu une version relaxée de la requête
-    # par l'intermédiaire de votre processus de relaxation, par exemple via ConjunctiveQueryRelaxation.
-    cqr = ConjunctiveQueryRelaxation(query, G, order=SIM_ORDER)
-    relaxed_versions = cqr.relax_query()
-    sim=Sim(G)
-    print("original_query")
-    print(query.to_sparql())
-    # Pour chaque version relaxée, on vérifie si toutes les clauses ont été relaxées.
-    for i, rq in enumerate(relaxed_versions):
-        valid = cqr.is_relaxed_version_valid(rq)
-        print(rq.to_sparql())
-        print(f"similarity: {sim.query_similarity(query.clauses, rq.clauses)}")
-        print(f"\n Version relaxée {i} valide ? {valid}")
-    
-    # for x in relaxed_versions[1]:
-    #     print("\n Clause:\n")
-    #     print(x.to_sparql())
-    #     print("\n relaxed Clause\n")
-    #     for y in relaxed_versions[1][x]:
-    #         print(y.to_sparql())
-
 # ---------------------------
 # Example Usage
 # ---------------------------
-# if __name__ == "__main__":
-#     # Initialize RDF graph
-#     g = Graph()
-#     # g.parse("graph.ttl", format="turtle")  # Uncomment and provide a file if needed
+if __name__ == "__main__":
+    from Relaxation.EndpointMode.SimilarityEndpoint import SimilarityCalculator as Sim
+    sparql_q = """
+    prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+    select ?x { ?x a ub:Student . }
+    """
+    dev = expand_sparql(sparql_q)
+    parser = SparqlTripletParser(dev); parser.parse()
+    cq = parser.query
 
-#     # Define a triple with a Literal
-#     clause1 = SimpleLiteral((URIRef("http://example.org/FullProfessor"), 
-#                              URIRef("http://example.org/teacherOf"), 
-#                              Literal("SW")))
-#     print("Triplet original:", clause1)
-
-#     # Instantiate TripleRelaxation
-#     triple_relax = TripleRelaxation(clause1, g, order=SIM_ORDER)
-
-#     # Display generated relaxed triples
-#     print("Triples relaxés générés:")
-#     while triple_relax.has_next():
-#         relaxed = triple_relax.next_relaxed_triple()
-#         print(relaxed)
+    endpoint_url = "http://localhost:8000/sparql"
+    cqr = ConjunctiveQueryRelaxation(cq, endpoint_url, order=SIM_ORDER)
+    relaxed = cqr.relax_query()
+    similarite=Sim(endpoint_url)
+    print("Original:", cq.to_sparql())
+    for i, rq in enumerate(relaxed):
+        print(f"--- Relaxed #{i} ---")
+        print(f"Similarite:{similarite.query_similarity(cq.clauses,rq.clauses)}")
+        print(rq.to_sparql(), "Valid?", cqr.is_relaxed_version_valid(rq))
+        print("\n")

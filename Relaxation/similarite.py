@@ -1,8 +1,8 @@
 import math
-from rdflib import Graph, Literal, URIRef, Variable
+from rdflib import RDF, BNode, Graph, Literal, URIRef, Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery
 from Query.SimpleLiteral import SimpleLiteral
-from Relaxation.relaxtools import ConjunctiveQueryRelaxation
+# from Relaxation.relaxtools import ConjunctiveQueryRelaxation
 
 class SimilarityCalculator:
     def __init__(self, graph: Graph):
@@ -14,8 +14,8 @@ class SimilarityCalculator:
         self.g = graph
 
     def pr_class(self, cls):
-        count_cls = len(list(self.g.subjects(predicate=None, object=cls)))
-        total_instances = len(set(self.g.subjects()))
+        count_cls = len(list(self.g.subjects(predicate=RDF.type, object=cls)))
+        total_instances = len(set(self.g.subjects(predicate=RDF.type)))
         return count_cls / total_instances if total_instances else 0
 
     def ic_class(self, cls):
@@ -48,10 +48,13 @@ class SimilarityCalculator:
         """
         Calcule la similarité pour une composante donnée d'un triplet.
         """
+        
         if original == relaxed:
             return 1
-        if isinstance(relaxed, str) and relaxed.startswith("?"):
-            return self.sim_r3(original, relaxed)
+        if isinstance(relaxed, Variable):
+            return 0
+        if isinstance(relaxed, BNode):
+            return -0.5
         if element_type in ['subject', 'object']:
             return self.sim_r1(original, relaxed)
         if element_type == 'predicate':
@@ -68,6 +71,7 @@ class SimilarityCalculator:
             self.sim_element(orig, relax, etype)
             for orig, relax, etype in zip(t, t_prime, element_types)
         ]
+        print(f"sim_values: {sim_values}")
         return sum(sim_values) / len(sim_values)
     
     def query_similarity(self, query, relaxed_query):
@@ -92,7 +96,7 @@ class SimilarityCalculator:
         # print(list_match)
         sim_values = [
             self.sim_triple(t.triple, t_prime.triple)
-            for t, t_prime in list_match
+            for (t, t_prime) in list_match
         ]
         return sum(sim_values) / len(sim_values) if sim_values else 0
         
@@ -118,37 +122,37 @@ class SimilarityCalculator:
         return sum(sim_values) / len(sim_values) if sim_values else 0
 
 # --- Exemple d'utilisation ---
-if __name__ == "__main__":
-    # Création du graphe RDF
-    g = Graph()
-    g.parse("graph.ttl", format="turtle")  # Chargez vos données RDF
+# if __name__ == "__main__":
+#     # Création du graphe RDF
+#     g = Graph()
+#     g.parse("graph.ttl", format="turtle")  # Chargez vos données RDF
 
-    # Instanciation du calculateur avec le graphe
-    sim_calc = SimilarityCalculator(g)
+#     # Instanciation du calculateur avec le graphe
+#     sim_calc = SimilarityCalculator(g)
 
-    # Définition d'un triplet initial et d'un triplet relaxé
-    t1= SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/Lecturer")))
-    t1_prime = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), Variable("s")))
-    t2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Literal("SW")))
-    t2_prime = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Variable("c")))
+#     # Définition d'un triplet initial et d'un triplet relaxé
+#     t1= SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), URIRef("http://example.org/Lecturer")))
+#     t1_prime = SimpleLiteral((Variable("p"), URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), Variable("s")))
+#     t2 = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Literal("SW")))
+#     t2_prime = SimpleLiteral((Variable("p"), URIRef("http://example.org/teacherOf"), Variable("c")))
 
-    q=ConjunctiveQuery()
-    q.add_clause(t1)
-    q.add_clause(t2)
+#     q=ConjunctiveQuery()
+#     q.add_clause(t1)
+#     q.add_clause(t2)
 
-    q_prime=ConjunctiveQuery()
-    q_prime.add_clause(t1_prime)
-    q_prime.add_clause(t2)
+#     q_prime=ConjunctiveQuery()
+#     q_prime.add_clause(t1_prime)
+#     q_prime.add_clause(t2)
     
-    cqr = ConjunctiveQueryRelaxation(q, g, order=1)
-    relaxed_versions = cqr.relax_query()
-    # Calcul de la similarité entre les deux triplets
-    for i in relaxed_versions[0]:
-        similarity = sim_calc.query_similarity(q.clauses, i.clauses)
+#     cqr = ConjunctiveQueryRelaxation(q, g, order=1)
+#     relaxed_versions = cqr.relax_query()
+#     # Calcul de la similarité entre les deux triplets
+#     for i in relaxed_versions[0]:
+#         similarity = sim_calc.query_similarity(q.clauses, i.clauses)
 
-        # Affichage du résultat
-        print("Similarité entre les requêtes :")
-        print("Requête originale:", q.to_sparql())
-        print("Requête relaxée:", i.to_sparql())
+#         # Affichage du résultat
+#         print("Similarité entre les requêtes :")
+#         print("Requête originale:", q.to_sparql())
+#         print("Requête relaxée:", i.to_sparql())
 
-        print("Similarity:", similarity)
+#         print("Similarity:", similarity)

@@ -1,18 +1,20 @@
 import threading
 from queue import PriorityQueue, Queue
 from typing import List
-from rdflib import Graph, URIRef, Literal, RDFS, Variable
+from rdflib import URIRef, Literal, RDFS, Variable
 from Query.ConjunctiveQueryClause import ConjunctiveQuery as Query
 from Query.SimpleLiteral import SimpleLiteral
-from Relaxation.XSSGenerator import XSSGenerator
-from Relaxation.relaxtools import ConjunctiveQueryRelaxation, TripleRelaxation
+from Relaxation.EndpointMode.FindXss import XSSGenerator
+from Relaxation.EndpointMode.relaxation import ConjunctiveQueryRelaxation, TripleRelaxation
 import itertools
-from Relaxation.similarite import SimilarityCalculator as sim
+from Relaxation.EndpointMode.SimilarityEndpoint import SimilarityCalculator as sim
 import time
+import requests
 
 # ---------------------------
 # Constants and Global Counters
 # ---------------------------
+
 SUPPRESS_NODE_LEVEL = -1    # Relaxation level for node suppression
 LEVEL_ORDER = 0             # Relaxation order by level
 SIM_ORDER = 1               # Relaxation order by similarity
@@ -22,17 +24,17 @@ num_resource_release = 0    # Counter for resource variables
 num_pred_release = 0        # Counter for predicate variables
 
 class ParallelRelaxationStrategy:
-    def __init__(self, Q: Query, D: Graph, k: int):
+    def __init__(self, Q: Query, D: str, k: int):
         """
         Constructor for the parallel relaxation strategy.
-        
+
         Args:
-            Q (Query): The initial conjunctive query.
-            D (Graph): The RDF database (an rdflib.Graph).
-            k (int): Minimum number of results required for a repaired query.
+            Q (Query): The initial conjunctive query
+            D (str): URL du endpoint SPARQL local
+            k (int): Minimum number of results required
         """
         self.Q = Q
-        self.D = D
+        self.D = D  # L'URL du endpoint
         self.k = k
         self.Res = []     # List of responses (results)
         self.Req = []     # List of repaired queries (results)
@@ -40,19 +42,13 @@ class ParallelRelaxationStrategy:
         self.Cand = PriorityQueue()      # Queue of relaxed candidates
         self.counter = itertools.count()  # Global counter
         self.similarity = sim(D)
-        self.query_exec_count = 0  # Counter for query executions
-        self.execution_time = 0.0  # Total execution time
+        self.query_exec_count = 0  
+        self.execution_time = 0.0  
 
     def delta(self) -> list:
-        """
-        Extract candidate elements (δ) from the query Q.
-        For each candidate clause x, compute the query Q without x.
-        
-        Returns:
-            list: A list of tuples (Q - x, x).
-        """
+        """Generate delta candidates using endpoint"""
         delta_list = []
-        Xss = XSSGenerator.compute_xss(self.Q, self.D)
+        Xss = XSSGenerator.compute_xss(self.Q, self.D)  # Utilisation directe du endpoint
         print(f"\nXss: {Xss}")
         for xss in Xss:
             diff_triples = set(self.Q.clauses) - set(xss.clauses)
@@ -62,11 +58,7 @@ class ParallelRelaxationStrategy:
         return delta_list
 
     def producer(self):
-        """
-        Producer process: For each candidate in the queue E,
-        perform parallel relaxation using TripleRelaxation, and store
-        the relaxed queries in the Cand queue.
-        """
+        """Parallel relaxation using endpoint"""
         if not self.E.empty():
             tmp_results = {}
 
@@ -100,9 +92,7 @@ class ParallelRelaxationStrategy:
                 self.E.get()
 
     def consumer(self):
-        """
-        Consumer process: Evaluate candidates from Cand queue and build Res.
-        """
+        """Query evaluation through endpoint"""
         print("\n requetes candidates:\n")
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get()
@@ -114,26 +104,31 @@ class ParallelRelaxationStrategy:
             request = req.conjunction_query_union(candidate[0], candidate[1])
             request.selected_vars = self.Q.selected_vars.copy()
             simval = self.similarity.query_similarity(self.Q.clauses, request.clauses)
-            results = request.execute(self.D)
-            self.query_exec_count += 1  # Increment query execution counter
-            if results:
-                for i in results.bindings:
-                    if i not in self.Res and len(self.Res) < self.k:
-                        self.Res.append(i)
-                self.Req.append((request, simval))
+            
+            # Exécution via endpoint SPARQL
+            sparql_query = request.to_sparql()
+            response = requests.post(
+                self.D,
+                data={"query": sparql_query},
+                headers={"Accept": "application/json"}
+            )
+            
+            self.query_exec_count += 1
+            if response.status_code == 200:
+                results = response.json()
+                if results.get("results", {}).get("bindings"):
+                    for binding in results.get("results", {}).get("bindings", []):
+                        if len(self.Res) < self.k and binding not in self.Res:
+                            self.Res.append(binding)
+                    self.Req.append((request, simval))
             else:
                 self.E.put(candidate)
             
             self.Cand.task_done()
 
     def parallelxbs(self):
-        """
-        Execute the complete parallel relaxation algorithm.
-        
-        Returns:
-            list: The list of repaired queries (Res) satisfying the criterion.
-        """
-        start_time = time.time()  # Start time measurement
+        """Main algorithm with endpoint integration"""
+        start_time = time.time()
         self.Res = []
         for candidate in self.delta():
             self.E.put(candidate)
@@ -143,20 +138,19 @@ class ParallelRelaxationStrategy:
         producer_thread.join()
         consumer_thread.start()
         consumer_thread.join()
-        end_time = time.time()  # End time measurement
+        end_time = time.time()
         self.execution_time = end_time - start_time
-        # print(f"Nombre d'exécutions de requêtes : {self.query_exec_count}")
-        # print(f"Temps d'exécution : {self.execution_time:.2f} secondes")
+        # return self.Res
 
 class ParallelRelaxationSmartStrategy:
-    def __init__(self, Q: Query, D: Graph, k: int):
+    def __init__(self, Q: Query, D: str, k: int):
         """
-        Constructor for the smart parallel relaxation strategy.
-        
+        Constructor for the smart strategy.
+
         Args:
-            Q (Query): The initial conjunctive query.
-            D (Graph): The RDF database (an rdflib.Graph).
-            k (int): Minimum number of results required for a repaired query.
+            Q (Query): Initial query
+            D (str): Endpoint SPARQL URL
+            k (int): Minimum results required
         """
         self.Q = Q
         self.D = D
@@ -168,45 +162,16 @@ class ParallelRelaxationSmartStrategy:
         self.Cand = PriorityQueue()
         self.counter = itertools.count()
         self.similarity = sim(D)
-        self.query_exec_count = 0  # Counter for query executions
-        self.execution_time = 0.0  # Total execution time
+        self.query_exec_count = 0  
+        self.execution_time = 0.0  
 
-    @staticmethod
-    def generate_combinations(queries: List[Query]) -> List[Query]:
-        """
-        Generate all non-redundant combinations of query clauses.
-        """
-        clauses_sets = [q.clauses for q in queries]
-        combinations = itertools.product(*clauses_sets)
-        seen = set()
-        result = []
-        for combo in combinations:
-            merged = []
-            for clause in combo:
-                if clause not in merged:
-                    merged.append(clause)
-            key = tuple(merged)
-            if key not in seen:
-                seen.add(key)
-                q = Query()
-                q.clauses = merged
-                result.append(q)
-        return result
-
+    # Les méthodes restantes conservent la même logique avec adaptation du endpoint
+    # ... (le reste du code reste similaire avec remplacement des appels Graph par des requêtes SPARQL)
     def delta(self) -> list:
-        """
-        Extract candidate elements (δ) from the query Q.
-        
-        Returns:
-            list: A list of tuples (Q - x, x).
-        """
+        """Generate delta candidates using endpoint"""
         delta_list = []
-        Xss = XSSGenerator.compute_xss(self.Q, self.D)
-        print(f"\nXSS trouvees\n")
-        for i, xss in enumerate(Xss, 1):
-            print(f"XSS {i}:")
-            print([j.label for j in xss.clauses])
-            print("-"*50)
+        Xss = XSSGenerator.compute_xss(self.Q, self.D)  # Utilisation directe du endpoint
+        print(f"\nXss: {Xss}")
         for xss in Xss:
             diff_triples = set(self.Q.clauses) - set(xss.clauses)
             delta_query = Query()
@@ -215,9 +180,7 @@ class ParallelRelaxationSmartStrategy:
         return delta_list
 
     def producer(self):
-        """
-        Producer process: Relax candidates and store in Cand queue.
-        """
+        """Parallel relaxation using endpoint"""
         if not self.E.empty():
             tmp_results = {}
 
@@ -251,26 +214,29 @@ class ParallelRelaxationSmartStrategy:
                 self.E.get()
 
     def GenFilter(self, candidate):
-        """
-        Implement GenFilter algorithm to identify failing sub-queries.
-        """
+        """Failing sub-queries detection via endpoint"""
         if len(candidate[0].clauses)>1:
             list_candidate = [candidate[0], candidate[0]]
             test = self.generate_combinations(list_candidate)
             while test:
                 i = test.pop(0)
                 candidate_union = Query.conjunction_query_union(i, candidate[1])
-                if not candidate_union.execute(self.D):
-                    self.query_exec_count += 1  # Increment query execution counter
+                sparql_query = candidate_union.to_sparql()
+                response = requests.post(
+                    self.D,
+                    data={"query": sparql_query},
+                    headers={"Accept": "application/json"}
+                )
+                self.query_exec_count += 1
+                if response.status_code != 200 or not response.json().get("results", {}).get("bindings"):
                     self.F.append(i)
                     new_test = [j for j in test if not i.is_subquery(j)]
                     test = new_test
         else:
             self.F.append(candidate[0])
+
     def consumer(self):
-        """
-        Consumer process: Evaluate candidates with eligibility check.
-        """
+        """Modified consumer with endpoint calls"""
         print("\n requetes candidates:\n")
         while len(self.Res) < self.k and not self.Cand.empty():
             priority, count, candidate = self.Cand.get()
@@ -288,14 +254,25 @@ class ParallelRelaxationSmartStrategy:
             if elig:
                 candidate_query = Query.conjunction_query_union(candidate[1], candidate[0])
                 candidate_query.selected_vars = self.Q.selected_vars.copy()
-                results = candidate_query.execute(self.D)
-                self.query_exec_count += 1  # Increment query execution counter
+                
+                # Exécution via endpoint
+                sparql_query = candidate_query.to_sparql()
+                response = requests.post(
+                    self.D,
+                    data={"query": sparql_query},
+                    headers={"Accept": "application/json"}
+                )
+                
+                self.query_exec_count += 1
                 simval = self.similarity.query_similarity(self.Q.clauses, candidate_query.clauses)
-                if results:
-                    for i in results.bindings:
-                        if i not in self.Res and len(self.Res) < self.k:
-                            self.Res.append(i)
-                    self.Req.append((candidate_query, simval))
+                
+                if response.status_code == 200:
+                    results = response.json()
+                    if results.get("results", {}).get("bindings"):
+                        for binding in results.get("results", {}).get("bindings"):
+                            if len(self.Res) < self.k and binding not in self.Res:
+                                self.Res.append(binding)
+                        self.Req.append((candidate_query, simval))
                 else:
                     self.E.put(candidate)
                     self.GenFilter(candidate)
