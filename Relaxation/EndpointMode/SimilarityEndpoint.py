@@ -147,8 +147,8 @@ class SimilarityCalculator:
         :return: La similarité globale (une valeur entre 0 et 1) entre les deux requêtes.
         """
         list_match=[]
-        if len(query) != len(relaxed_query):
-            raise ValueError("Les requêtes doivent contenir le même nombre de patrons de triplet.")
+        # if len(query) != len(relaxed_query):
+        #     raise ValueError("Les requêtes doivent contenir le même nombre de patrons de triplet.")
         for i in query:
             for j in relaxed_query:
                 if i.label in j.label:
@@ -158,7 +158,7 @@ class SimilarityCalculator:
             self.sim_triple(t.triple, t_prime.triple)
             for (t, t_prime) in list_match
         ]
-        return sum(sim_values) / len(sim_values) if sim_values else 0
+        return sum(sim_values) / len(query) if sim_values else 0
 
     def query_similarity2(self, query, relaxed_query):
         if len(query) != len(relaxed_query):

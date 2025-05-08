@@ -20,12 +20,9 @@ from Relaxation.parser2 import expand_sparql
 
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x ?y1 ?y2 ?y3 {
-  ?x a ub:Professor;
-    ub:worksFor <http://www.Department0.University0.edu>;
-    ub:name ?y1;
-    ub:emailAddress ?y2;
-    ub:telephone ?y3.
+select ?x {
+  ?x a ub:Person.
+  <http://www.University0.edu> ub:hasAlumnus ?x.
 }"""
 
 devquery=expand_sparql(sparql_query)
@@ -38,7 +35,7 @@ query= parser.query
 print("Requête conjonctive :")
 print(query.to_sparql())
 # Create an RDF graph D (can be loaded or built dynamically)
-D = "http://localhost:8000/sparql"
+D = "http://localhost:3030/ds/query"
  # Uncomment if you have a file
 
 # Number of repaired queries needed.

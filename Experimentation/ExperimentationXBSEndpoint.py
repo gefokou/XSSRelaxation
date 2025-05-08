@@ -22,7 +22,8 @@ from Relaxation.parser2 import expand_sparql
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 select ?x {
-  ?x a ub:UndergraduateStudent.
+  ?x a ub:Person.
+  <http://www.University0.edu> ub:hasAlumnus ?x.
 }"""
 
 devquery=expand_sparql(sparql_query)
@@ -35,7 +36,7 @@ query= parser.query
 print("Requête conjonctive :")
 print(query.to_sparql())
 # Create an RDF graph D (can be loaded or built dynamically)
-D = "http://localhost:8000/sparql"
+D = "http://localhost:3030/ds/query"
  # Uncomment if you have a file
 
 # Number of repaired queries needed.
@@ -67,3 +68,4 @@ for rs in strategy.Res:
 print("Statistiques de la methode: \n")
 print(f"temps d'execution:{strategy.execution_time}")
 print(f"nombre d'execution de requetes:{strategy.query_exec_count}")
+print(len(strategy.Res))

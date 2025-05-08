@@ -22,9 +22,13 @@ from Relaxation.parser2 import expand_sparql
 # print(query.to_sparql())
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x {
-  ?x a ub:ResearchGroup;
-    ub:subOrganizationOf <http://www.University0.edu>.
+select ?x ?y ?z {
+  ?x a ub:GraduateStudent;
+    ub:undergraduateDegreeFrom ?y;
+    ub:memberOf ?z.
+  ?y a ub:University.
+  ?z a ub:Department;
+    ub:subOrganizationOf ?y.
 }"""
 devquery=expand_sparql(sparql_query)
 parser = SparqlTripletParser(devquery)
