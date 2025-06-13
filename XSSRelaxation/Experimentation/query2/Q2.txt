@@ -1,0 +1,3 @@
+SELECT ∗
+WHERE { UndergraduateStudent33 advisor ?Y 1 . ?Y 1 doctoralDegreeFrom ?Y 2 .
+?Y 2 hasAlumnus ?Y 3 . ?Y 3 title ?Y 4 }

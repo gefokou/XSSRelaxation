@@ -1,0 +1,6 @@
+SELECT ∗
+WHERE { ?X type Professor . ?X teacherOf Course2 . X name ?Y 1 .
+?X age ?Y 2 . ?X emailAddress ?Y 3 . ?X mastersDegreeFrom ?Y 4 .
+?X worksFor ?Y 5 . ?Y 5 subOrganizationOf ?Y 6 . ?Y 6 name ?Y 7 .
+?Y 8 advisor ?X . ?Y 8 mastersDegreeFrom ?Y 4 . ?Y 8 memberOf ?Y 9 .
+?Y 8 emailAdress ?Y 10 . ?Y 8 takesCourse ?Y 11 . ?Y 8 name ?Y 12 }

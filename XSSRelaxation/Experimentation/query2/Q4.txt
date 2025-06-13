@@ -1,0 +1,4 @@
+SELECT ∗
+WHERE { ?X type UndergraduateStudent . ?X memberOf ?Y 1 .
+?X mastersDegreeFrom University822 . ?X emailAddress ?Y 2 .
+?X advisor FullProfessor0 . ?X takesCourse ?Y 3 . ?X name ?Y 4 }

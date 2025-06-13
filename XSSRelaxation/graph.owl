@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+   xmlns:ex="http://example.org/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+>
+  <rdf:Description rdf:about="http://example.org/s1">
+    <rdf:type rdf:resource="http://example.org/Lecturer"/>
+    <ex:teacherOf>SW</ex:teacherOf>
+    <ex:age rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">45</ex:age>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/s3">
+    <rdf:type rdf:resource="http://example.org/FullProfessor"/>
+    <ex:teacherOf>DB</ex:teacherOf>
+    <ex:age rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">46</ex:age>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/s2">
+    <rdf:type rdf:resource="http://example.org/Lecturer"/>
+    <ex:nationality>US</ex:nationality>
+    <ex:age rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">46</ex:age>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/FullProfessor">
+    <rdfs:subClassOf rdf:resource="http://example.org/Lecturer"/>
+  </rdf:Description>
+</rdf:RDF>

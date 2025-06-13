@@ -1,0 +1,4 @@
+SELECT ∗ WHERE { 
+    ?X rdf:type ub:FullProfessor .
+    ?X title ’Dr’ . 
+    }

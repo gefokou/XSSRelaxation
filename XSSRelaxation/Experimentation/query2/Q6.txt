@@ -1,0 +1,6 @@
+SELECT ∗
+WHERE { ?X type Faculty . ?X doctoralDegreeFrom ?Y 1 . ?X memberOf ?Y 2 .
+?X headOf ?Y 3 . ?X title ?Y 4 . ?X officeNumber ?Y 5 .
+?X researchInterest ?Y 6 . X name ’FullProfessor3’ . ?X emailAddress ?Y 7 .
+?X age ?Y 8 . ?X mastersDegreeFrom Department2 .
+?X undergraduateDegreeFrom ?Y 9 }
