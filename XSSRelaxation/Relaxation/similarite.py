@@ -71,7 +71,6 @@ class SimilarityCalculator:
             self.sim_element(orig, relax, etype)
             for orig, relax, etype in zip(t, t_prime, element_types)
         ]
-        print(f"sim_values: {sim_values}")
         return sum(sim_values) / len(sim_values)
     
     def query_similarity(self, query, relaxed_query):

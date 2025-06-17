@@ -1,3 +1,7 @@
-SELECT ∗
-WHERE { ?X type FullProfessor . ?X publicationAuthor ?Y 1 .
-?X worksFor ?Y 2 . ?Y 3 advisor ?X . ?X title ?Y 4 }
+SELECT *
+WHERE { 
+    ?X a ub:FullProfessor . 
+    ?X ub:publicationAuthor ?Y1 .
+    ?X ub:worksFor ?Y2 . 
+    ?Y3 ub:advisor ?X . 
+    ?X ub:title ?Y4 }

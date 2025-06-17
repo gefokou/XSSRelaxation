@@ -1,4 +1,11 @@
-SELECT ∗
-WHERE { ?X type UndergraduateStudent . ?X memberOf ?Y 1 .
-?X mastersDegreeFrom University822 . ?X emailAddress ?Y 2 .
-?X advisor FullProfessor0 . ?X takesCourse ?Y 3 . ?X name ?Y 4 }
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+SELECT *
+WHERE { 
+?X ub:type ub:UndergraduateStudent .
+?X ub:memberOf ?Y1 .
+?X ub:mastersDegreeFrom <http://www.University822.edu> . 
+?X ub:emailAddress ?Y2 .
+?X ub:advisor <http://www.Department0.University0.edu/FullProfessor0> . 
+?X ub:takesCourse ?Y3 . 
+?X ub:name ?Y4 .
+}

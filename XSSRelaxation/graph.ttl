@@ -2,8 +2,6 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:FullProfessor rdfs:subClassOf ex:Lecturer .
-
 ex:s1 a ex:Lecturer ;
     ex:age 45 ;
     ex:teacherOf "SW" .
@@ -12,7 +10,7 @@ ex:s2 a ex:Lecturer ;
     ex:age 46 ;
     ex:nationality "US" .
 
-ex:s3 a ex:Lecturer ;
-    ex:age 43 ;
-    ex:teacherOf "SW" .
+ex:s3 a ex:FullProfessor ;
+    ex:age 46 ;
+    ex:teacherOf "DB" .
 

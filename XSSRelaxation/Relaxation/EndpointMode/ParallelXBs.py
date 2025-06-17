@@ -224,11 +224,11 @@ class ParallelRelaxationSmartStrategy:
             def relax_task(candidate):
                 query_relax = ConjunctiveQueryRelaxation(candidate[0], self.D, order=1)
                 result = query_relax.relax_query()
-                results=[]
-                for cand in result:
-                    valid = query_relax.is_relaxed_version_valid(cand)
-                    if valid:
-                        results.append((cand, candidate[1]))
+                results=[(i, candidate[1]) for i in result if query_relax.is_relaxed_version_valid(i)]
+                # for cand in result:
+                #     valid = query_relax.is_relaxed_version_valid(cand)
+                #     if valid:
+                #         results.append((cand, candidate[1]))
                 # results = [(i, candidate[1]) for i in result]
                 # if results:
                 #     results.pop(0)

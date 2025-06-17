@@ -35,7 +35,7 @@ print("Requête conjonctive :")
 print(query.to_sparql())
 # Create an RDF graph D (can be loaded or built dynamically)
 D = Graph()
-D.parse("graph.owl", format="xml")  # Uncomment if you have a file
+D.parse("graph.ttl", format="ttl")  # Uncomment if you have a file
 
 # Number of repaired queries needed.
 k = 4

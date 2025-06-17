@@ -69,16 +69,16 @@ class SparqlTripletParser:
         # Littéral typé
         if term.startswith('"'):
             # Type ^^<URI>
-            if '^^<' in term:
-                value_part, dtype_part = term.split('^^', 1)
-                val = value_part.strip('"')
-                # Cast int si possible
-                if val.isdigit():
-                    val = int(val)
-                dtype = URIRef(dtype_part.strip('<>'))
-                return RDFLiteral(val, datatype=dtype)
-            # Littéral simple
-            return RDFLiteral(term.strip('"'))
+            if term.startswith('"') and '^^<' not in term:
+                # littéral simple
+                return RDFLiteral(term[1:-2])
+            if term.startswith('"') and '^^<' in term:
+                val_part, dtype_part = term.split('^^', 1)
+                val = val_part[1:-1]
+                if val.isdigit(): val = int(val)
+                dtype_uri = URIRef(dtype_part.strip('<> '))
+                return RDFLiteral(val, datatype=dtype_uri)
+
         # URIRef
         clean = term.strip().strip('<>').strip()
         # 2) on crée l'URIRef

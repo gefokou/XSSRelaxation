@@ -224,9 +224,9 @@ class ParallelRelaxationSmartStrategy:
             def relax_task(candidate):
                 query_relax = ConjunctiveQueryRelaxation(candidate[0], self.D, order=1)
                 result = query_relax.relax_query()
-                results = [(i, candidate[1]) for i in result]
-                if results:
-                    results.pop(0)
+                results = [(i, candidate[1]) for i in result if query_relax.is_relaxed_version_valid(i)]
+                # if results:
+                #     results.pop(0)
                 tmp_results[candidate] = results
 
             threads = []
@@ -260,12 +260,15 @@ class ParallelRelaxationSmartStrategy:
             while test:
                 i = test.pop(0)
                 candidate_union = Query.conjunction_query_union(i, candidate[1])
-                if not candidate_union.execute(self.D):
-                    self.query_exec_count += 1  # Increment query execution counter
+                results = candidate_union.execute(self.D)
+                self.query_exec_count += 1  # Increment query execution counter
+                if not results:
+                    # self.query_exec_count += 1  # Increment query execution counter
                     self.F.append(i)
                     new_test = [j for j in test if not i.is_subquery(j)]
                     test = new_test
         else:
+            print("Candidate with only one clause, no need for GenFilter.")
             self.F.append(candidate[0])
     def consumer(self):
         """
@@ -311,25 +314,14 @@ class ParallelRelaxationSmartStrategy:
             list: The list of repaired queries (Res) satisfying the criterion.
         """
         start_time = time.time()  # Start time measurement
-        while not self.E.empty():
-            self.E.get()
+        self.Res = []
         for candidate in self.delta():
-            cqr = ConjunctiveQueryRelaxation(candidate[0], self.D, order=1)
-            relaxed_versions = cqr.relax_query()
-            req = Query()
-            for i, cand in enumerate(relaxed_versions):
-                valid = cqr.is_relaxed_version_valid(cand)
-                if valid:
-                    request = req.conjunction_query_union(cand, candidate[1])
-                    sim_value = self.similarity.query_similarity(self.Q.clauses, request.clauses)
-                    count = next(self.counter)
-                    self.Cand.put((-sim_value, count, (cand, candidate[1])))
-
+            self.E.put(candidate)
         producer_thread = threading.Thread(target=self.producer)
         consumer_thread = threading.Thread(target=self.consumer)
-        consumer_thread.start()
-        consumer_thread.join()
         producer_thread.start()
         producer_thread.join()
+        consumer_thread.start()
+        consumer_thread.join()
         end_time = time.time()  # End time measurement
         self.execution_time = end_time - start_time

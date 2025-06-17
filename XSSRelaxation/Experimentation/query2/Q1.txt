@@ -1,4 +1,5 @@
-SELECT ∗ WHERE { 
-    ?X rdf:type ub:FullProfessor .
-    ?X title ’Dr’ . 
-    }
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+SELECT * WHERE { 
+    ?X a ub:FullProfessor .
+    ?X ub:title ’Dr’ . 
+}

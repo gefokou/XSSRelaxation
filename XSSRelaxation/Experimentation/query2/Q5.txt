@@ -1,4 +1,13 @@
-SELECT ∗
- WHERE { ?X type FullProfessor . ?X doctoralDegreeFrom ?Y 1 . ?X memberOf ?Y 2 .
-?X headOf ?Y 1 . ?X title ?Y 3 . ?X officeNumber ?Y 4 .
-?X researchInterest ?Y 5 . ?Y 6 advisor ?X . ?Y 6 name ?Y 7 }
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+SELECT *
+ WHERE { 
+    ?X ub:type ub:FullProfessor . 
+    ?X ub:doctoralDegreeFrom ?Y1 . 
+    ?X ub:memberOf ?Y2 .
+    ?X ub:headOf ?Y1 . 
+    ?X ub:title ?Y3 . 
+    ?X ub:officeNumber ?Y4 .
+    ?X ub:researchInterest ?Y5 . 
+    ?Y6 ub:advisor ?X . 
+    ?Y6 ub:name ?Y7.
+    }
