@@ -332,6 +332,7 @@ class ConjunctiveQueryRelaxation:
             new_query = ConjunctiveQuery()
             for clause in combination:
                 new_query.add_clause(clause)
+                new_query.selected_vars= self.query.selected_vars.copy()  # Copie des variables sélectionnées de la requête originale
             all_relaxed_queries.append(new_query)
         
         return all_relaxed_queries

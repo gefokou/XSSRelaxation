@@ -81,7 +81,7 @@ class MFSBasedRelaxationStrategy:
             # Génération de chaque requête fille en relaxant un triplet
             for Qc in relaxversion:
                     if Qc not in self.inserted:
-                        Qc.selected_vars=self.Q.selected_vars.copy()
+                        # Qc.selected_vars=self.Q.selected_vars.copy()
 
                         self.inserted.add(Qc)
 
