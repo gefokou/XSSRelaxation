@@ -81,6 +81,8 @@ class MFSBasedRelaxationStrategy:
             # Génération de chaque requête fille en relaxant un triplet
             for Qc in relaxversion:
                     if Qc not in self.inserted:
+                        # Qc.selected_vars=self.Q.selected_vars.copy()
+                        
                         self.inserted.add(Qc)
 
                         # Élagage : si un MFS reste intact dans Qc, on marque comme failed
@@ -99,12 +101,14 @@ if __name__ == "__main__":
     # Exemple d'utilisation
     sparql_query = """
     prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x ?y {
-  ?x a ub:Student;
-    ub:takesCourse ?y.
-  ?y a ub:Course.
-  <http://www.Department0.University0.edu/AssociateProfessor0> ub:teacherOf ?y.
-}"""
+    select ?x ?y1 ?y2 ?y3 {
+    ?x a ub:Professor;
+    ub:worksFor <http://www.Department0.University0.edu>;
+    ub:name ?y1;
+    ub:emailAddress ?y2;
+    ub:telephone ?y3.
+}
+"""
 
     devquery=expand_sparql(sparql_query)
     # print("\nRequête SPARQL développée :")
@@ -118,7 +122,7 @@ select ?x ?y {
     # Create an RDF graph D (can be loaded or built dynamically)
     D = "http://localhost:3030/ds/query"
 
-    mbs_strategy = MFSBasedRelaxationStrategy(query, D, k=5)
+    mbs_strategy = MFSBasedRelaxationStrategy(query, D, k=50)
     print("\n MFS trouvées :\n")
     for i, mfs in enumerate(mbs_strategy.MFS_list, 1):
         print(f"MFS {i} :", [cl.label for cl in mfs.clauses])
@@ -137,3 +141,4 @@ select ?x ?y {
         print("\n")
     print("Nombre de requêtes exécutées :", mbs_strategy.query_exec_count)
     print("Temps d'exécution total :", mbs_strategy.execution_time, "s")
+    print("nombre de resultats:",len(mbs_strategy.Res))

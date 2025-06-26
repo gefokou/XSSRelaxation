@@ -2,7 +2,7 @@ PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 SELECT *
 WHERE { 
     <http://www.Department0.University0.edu/UndergraduateStudent33> ub:advisor ?Y1 . 
-    ?Y1 doctoralDegreeFrom ?Y2 .
-    ?Y 2 ub:hasAlumnus ?Y3 .
-    ?Y 3 ub:title ?Y4 .
+    ?Y1 ub:doctoralDegreeFrom ?Y2 .
+    ?Y2 ub:hasAlumnus ?Y3 .
+    ?Y3 ub:title ?Y4 .
     }

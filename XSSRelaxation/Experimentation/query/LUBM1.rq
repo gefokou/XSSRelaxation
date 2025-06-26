@@ -1,11 +1,12 @@
-# LUBM1
-
-# This query bears large input and high selectivity.  It queries about
-# just one class and one property and does not assume any hierarchy
-# information or inference.
+# LUBM5
+#
+# This query assumes `subClassOf' relationship between `Person' and
+# its subclasses and `subPropertyOf' relationship between `memberOf'
+# and its subproperties.  Moreover, class `Person' features a deep and
+# wide hierarchy.
 
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 select ?x {
-  ?x a ub:GraduateStudent;
-    ub:takesCourse <http://www.Department0.University0.edu/GraduateCourse0>.
+  ?x a ub:Person;
+    ub:memberOf <http://www.Department0.University0.edu>.
 }

@@ -8,9 +8,9 @@ WHERE {
     ?X ub:title ?Y4 . 
     ?X ub:officeNumber ?Y5 .
     ?X ub:researchInterest ?Y6 . 
-    ?X ub:name ’FullProfessor3’ . 
+    ?X ub:name ’FullProfessor3’ .
     ?X ub:emailAddress ?Y7 .
     ?X ub:age ?Y8 . 
-    ?X ub:mastersDegreeFrom <http://www.Department2.University0.edu>.
-    ?X ub:undergraduateDegreeFrom ?Y9.
+    ?X ub:mastersDegreeFrom <http://www.Department2.University0.edu> . 
+    ?X ub:undergraduateDegreeFrom ?Y9 .
      }

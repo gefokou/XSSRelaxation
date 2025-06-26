@@ -1,11 +1,16 @@
-# LUBM6
+# LUBM9
 #
-# This query queries about only one class.  But it assumes both the
-# explicit `subClassOf' relationship between `UndergraduateStudent'
-# and `Student' and the implicit one between `GraduateStudent' and
-# `Student'.  In addition, it has large input and low selectivity.
+# Besides the aforementioned features of class `Student' and the wide
+# hierarchy of class `Faculty', like query LUBM2, this query is
+# characterized by the most classes and properties in the query set
+# and there is a triangular pattern of relationships.
 
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x {
-  ?x a ub:Student.
+select ?x ?y ?z {
+  ?x a ub:Student;
+    ub:advisor ?y;
+    ub:takesCourse ?z.
+  ?y a ub:Faculty;
+    ub:teacherOf ?z.
+  ?z a ub:Course.
 }

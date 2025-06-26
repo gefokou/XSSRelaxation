@@ -58,13 +58,13 @@ for rq in strategy.Req:
 print("\n \n")
 
 # Afficher le contenu de Res 
-print("Resultats obtenus:")
-print("\n")
-for rs in strategy.Res:
-    print("results:")
-    print("\n")
-    print(rs)
-    print("\n \n")
+# print("Resultats obtenus:")
+# print("\n")
+# for rs in strategy.Res:
+#     print("results:")
+#     print("\n")
+#     print(rs)
+#     print("\n \n")
 
 print("Statistiques de la methode: \n")
 print(f"temps d'execution:{strategy.execution_time}")

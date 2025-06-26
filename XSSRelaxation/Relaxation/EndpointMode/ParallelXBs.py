@@ -118,6 +118,7 @@ class ParallelRelaxationStrategy:
             # Exécution via endpoint SPARQL
             def execute_query(request):
                 sparql_query = request.to_sparql()
+                # print("requete a executer",sparql_query)
                 response = requests.post(
                     self.D,
                     data={"query": sparql_query},
@@ -130,25 +131,27 @@ class ParallelRelaxationStrategy:
             if response.status_code == 200:
                 results = response.json()
                 if results.get("results", {}).get("bindings"):
+                    # print(len(results.get("results", {}).get("bindings", [])))
+                    # print("requete qui a reussi:",request.to_sparql())
                     for binding in results.get("results", {}).get("bindings", []):
                         if len(self.Res) < self.k and binding not in self.Res:
                             self.Res.append(binding)
                     self.Req.append((request, simval))
             else:
                 self.E.put(candidate)
-        if len(self.Res) < self.k:
-            for x in self.xss:
-                if len(self.Res) < self.k:
-                    self.Req.append((x[0], x[1]))
-                    response = execute_query(x[0])
-                    self.query_exec_count += 1
-                    if response.status_code == 200:
-                        results = response.json()
-                        if results.get("results", {}).get("bindings"):
-                            for binding in results.get("results", {}).get("bindings", []):
-                                if len(self.Res) < self.k and binding not in self.Res:
-                                    self.Res.append(binding)
-            self.Cand.task_done()
+        # if len(self.Res) < self.k:
+        #     for x in self.xss:
+        #         if len(self.Res) < self.k:
+        #             self.Req.append((x[0], x[1]))
+        #             response = execute_query(x[0])
+        #             self.query_exec_count += 1
+        #             if response.status_code == 200:
+        #                 results = response.json()
+        #                 if results.get("results", {}).get("bindings"):
+        #                     for binding in results.get("results", {}).get("bindings", []):
+        #                         if len(self.Res) < self.k and binding not in self.Res:
+        #                             self.Res.append(binding)
+        self.Cand.task_done()
 
     def parallelxbs(self):
         """Main algorithm with endpoint integration"""
@@ -351,17 +354,17 @@ class ParallelRelaxationSmartStrategy:
                 print("Requete candidate non valide")
                 self.E.put(candidate)
             
-        for x in self.xss:
-            if len(self.Res) < self.k:
-                self.Req.append((x[0], x[1]))
-                response = execute_query(x[0])
+        # for x in self.xss:
+        #     if len(self.Res) < self.k:
+        #         self.Req.append((x[0], x[1]))
+        #         response = execute_query(x[0])
             
-                self.query_exec_count += 1
-                if response.status_code == 200:
-                    results = response.json()
-                    for binding in results.get("results", {}).get("bindings", []):
-                        if len(self.Res) < self.k and binding not in self.Res:
-                            self.Res.append(binding)
+        #         self.query_exec_count += 1
+        #         if response.status_code == 200:
+        #             results = response.json()
+        #             for binding in results.get("results", {}).get("bindings", []):
+        #                 if len(self.Res) < self.k and binding not in self.Res:
+        #                     self.Res.append(binding)
 
         self.Cand.task_done()
 

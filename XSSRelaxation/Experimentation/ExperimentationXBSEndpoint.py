@@ -21,19 +21,18 @@ from Relaxation.parser2 import expand_sparql
 
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x ?y ?z {
-  ?x a ub:Student;
-    ub:advisor ?y;
-    ub:takesCourse ?z.
-  ?y a ub:Faculty;
-    ub:teacherOf ?z.
-  ?z a ub:Course.
+select ?x ?y1 ?y2 ?y3 {
+  ?x a ub:Professor;
+    ub:worksFor <http://www.Department0.University0.edu>;
+    ub:name ?y1;
+    ub:emailAddress ?y2;
+    ub:telephone ?y3.
 }
 """
 
 devquery=expand_sparql(sparql_query)
-# print("\nRequête SPARQL développée :")
-# print(devquery)
+print("\nRequête SPARQL développée :")
+print(devquery)
 
 parser = SparqlTripletParser(devquery)
 parser.parse()
@@ -45,10 +44,10 @@ D = "http://localhost:3030/ds/sparql"
  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 4
+
 
 # Instantiate the parallel relaxation strategy.
-strategy = ParallelRelaxationStrategy(query, D, k)
+strategy = ParallelRelaxationStrategy(query, D, k=50)
 strategy.parallelxbs()
 
 print("Requetes reparées:")
@@ -64,13 +63,13 @@ print("\n \n")
 # Afficher le contenu de Res 
 print("Resultats obtenus:")
 print("\n")
-for rs in strategy.Res:
-    print("results:")
-    print("\n")
-    print(rs)
-    print("\n \n")
+# for rs in strategy.Res:
+#     print("results:")
+#     print("\n")
+#     print(rs)
+#     print("\n \n")
 
 print("Statistiques de la methode: \n")
 print(f"temps d'execution:{strategy.execution_time}")
 print(f"nombre d'execution de requetes:{strategy.query_exec_count}")
-print(len(strategy.Res))
+print("nombre de resultats:",len(strategy.Res))
