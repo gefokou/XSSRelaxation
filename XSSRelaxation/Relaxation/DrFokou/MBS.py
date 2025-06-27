@@ -104,14 +104,14 @@ class MFSBasedRelaxationStrategy:
 if __name__ == "__main__":
     # Exemple d'utilisation
     sparql_query = """ 
-prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x ?y1 ?y2 ?y3 {
-  ?x a ub:Professor;
-    ub:worksFor <http://www.Department0.University0.edu>;
-    ub:name ?y1;
-    ub:emailAddress ?y2;
-    ub:telephone ?y3.
-}
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+SELECT *
+WHERE { 
+    <http://www.Department0.University0.edu/UndergraduateStudent33> ub:advisor ?Y1 . 
+    ?Y1 ub:doctoralDegreeFrom ?Y2 .
+    ?Y2 ub:hasAlumnus ?Y3 .
+    ?Y3 ub:title ?Y4 .
+    }
 """
 
     devquery=expand_sparql(sparql_query)

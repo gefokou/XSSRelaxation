@@ -19,11 +19,14 @@ from Relaxation.parser2 import expand_sparql
 # print(query.to_sparql())
 
 sparql_query = """
-prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-select ?x {
-  ?x a ub:Person.
-  <http://www.University0.edu> ub:hasAlumnus ?x.
-}
+PREFIX ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+SELECT *
+WHERE { 
+    <http://www.Department0.University0.edu/UndergraduateStudent33> ub:advisor ?Y1 . 
+    ?Y1 ub:doctoralDegreeFrom ?Y2 .
+    ?Y2 ub:hasAlumnus ?Y3 .
+    ?Y3 ub:title ?Y4 .
+    }
 """
 
 devquery=expand_sparql(sparql_query)

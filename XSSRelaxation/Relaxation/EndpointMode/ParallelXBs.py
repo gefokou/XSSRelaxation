@@ -50,14 +50,14 @@ class ParallelRelaxationStrategy:
         """Generate delta candidates using endpoint"""
         delta_list = []
         Xss = XSSGenerator.compute_xss(self.Q, self.D)  # Utilisation directe du endpoint
-        # print(f"\nXSS trouvees\n")
+        print(f"\nXSS trouvees\n")
         if len(Xss[0].clauses) == len(self.Q.clauses):
             # print("XSS candidates are equal to the original query")
             return []
-        # for i, xss in enumerate(Xss, 1):
-        #     print(f"XSS {i}:")
-        #     print([j.label for j in xss.clauses])
-        #     print("-"*50)
+        for i, xss in enumerate(Xss, 1):
+            print(f"XSS {i}:")
+            print([j.label for j in xss.clauses])
+            print("-"*50)
         for xss in Xss:
             sim=self.similarity.query_similarity(self.Q.clauses, xss.clauses)
             self.xss.append((xss, sim))
