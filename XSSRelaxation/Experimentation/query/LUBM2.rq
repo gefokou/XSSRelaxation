@@ -13,3 +13,4 @@ select ?x ?y1 ?y2 ?y3 {
     ub:emailAddress ?y2;
     ub:telephone ?y3.
 }
+

@@ -50,14 +50,14 @@ class ParallelRelaxationStrategy:
         """Generate delta candidates using endpoint"""
         delta_list = []
         Xss = XSSGenerator.compute_xss(self.Q, self.D)  # Utilisation directe du endpoint
-        print(f"\nXSS trouvees\n")
+        # print(f"\nXSS trouvees\n")
         if len(Xss[0].clauses) == len(self.Q.clauses):
             # print("XSS candidates are equal to the original query")
             return []
-        for i, xss in enumerate(Xss, 1):
-            print(f"XSS {i}:")
-            print([j.label for j in xss.clauses])
-            print("-"*50)
+        # for i, xss in enumerate(Xss, 1):
+        #     print(f"XSS {i}:")
+        #     print([j.label for j in xss.clauses])
+        #     print("-"*50)
         for xss in Xss:
             sim=self.similarity.query_similarity(self.Q.clauses, xss.clauses)
             self.xss.append((xss, sim))
@@ -195,6 +195,7 @@ class ParallelRelaxationSmartStrategy:
         self.similarity = sim(D)
         self.query_exec_count = 0  
         self.execution_time = 0.0  
+        self.nbfilter=0
 
     # Les méthodes restantes conservent la même logique avec adaptation du endpoint
     # ... (le reste du code reste similaire avec remplacement des appels Graph par des requêtes SPARQL)
@@ -202,14 +203,14 @@ class ParallelRelaxationSmartStrategy:
         """Generate delta candidates using endpoint"""
         delta_list = []
         Xss = XSSGenerator.compute_xss(self.Q, self.D)  # Utilisation directe du endpoint
-        print(f"\nXSS trouvees\n")
+        # print(f"\nXSS trouvees\n")
         if len(Xss[0].clauses) == len(self.Q.clauses):
             # print("XSS candidates are equal to the original query")
             return []
-        for i, xss in enumerate(Xss, 1):
-            print(f"XSS {i}:")
-            print([j.label for j in xss.clauses])
-            print("-"*50)
+        # for i, xss in enumerate(Xss, 1):
+        #     # print(f"XSS {i}:")
+        #     # print([j.label for j in xss.clauses])
+        #     # print("-"*50)
         for xss in Xss:
             sim=self.similarity.query_similarity(self.Q.clauses, xss.clauses)
             self.xss.append((xss, sim))
@@ -282,7 +283,7 @@ class ParallelRelaxationSmartStrategy:
 
     def GenFilter(self, candidate):
         """Failing sub-queries detection via endpoint"""
-        print("\n Filter")
+        # print("\n Filter")
         if len(candidate[0].clauses)>1:
             list_candidate = [candidate[0], candidate[0]]
             test = self.generate_combinations(list_candidate)
@@ -298,7 +299,8 @@ class ParallelRelaxationSmartStrategy:
                         headers={"Accept": "application/json"}
                     )
                     self.query_exec_count += 1
-                    if response.status_code != 200 or not response.json().get("results", {}).get("bindings"):
+                    self.nbfilter += 1
+                    if response.status_code == 200 and not response.json().get("results", {}).get("bindings"):
                         self.F.append(i)
                         new_test = [j for j in test if not i.is_subquery(j)]
                         test = new_test
@@ -322,7 +324,7 @@ class ParallelRelaxationSmartStrategy:
                     elig = False
                 i += 1
             if elig:
-                print("Execution de la requete candidate")
+                # print("Execution de la requete candidate")
                 candidate_query = Query.conjunction_query_union(candidate[1], candidate[0])
                 candidate_query.selected_vars = self.Q.selected_vars.copy()
                 
@@ -342,7 +344,7 @@ class ParallelRelaxationSmartStrategy:
                 
                 if response.status_code == 200 and response.json().get("results", {}).get("bindings"):
                     results = response.json()
-                    print("Requete candidate valide avec des resultats\n")
+                    # print("Requete candidate valide avec des resultats\n")
                     for binding in results.get("results", {}).get("bindings"):
                         if len(self.Res) < self.k and binding not in self.Res:
                             self.Res.append(binding)
@@ -351,7 +353,7 @@ class ParallelRelaxationSmartStrategy:
                     self.E.put(candidate)
                     self.GenFilter(candidate)
             else:
-                print("Requete candidate non valide")
+                # print("Requete candidate non valide")
                 self.E.put(candidate)
             
         # for x in self.xss:
@@ -392,3 +394,4 @@ class ParallelRelaxationSmartStrategy:
         consumer_thread.join()
         end_time = time.time()  # End time measurement
         self.execution_time = end_time - start_time
+        

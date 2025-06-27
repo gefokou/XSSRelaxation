@@ -11,3 +11,5 @@ select ?x ?y {
   ?y a ub:Course.
   <http://www.Department0.University0.edu/AssociateProfessor0> ub:teacherOf ?y.
 }
+
+

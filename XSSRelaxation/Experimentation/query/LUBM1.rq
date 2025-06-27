@@ -10,3 +10,4 @@ select ?x {
   ?x a ub:Person;
     ub:memberOf <http://www.Department0.University0.edu>.
 }
+

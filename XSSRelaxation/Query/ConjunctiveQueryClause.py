@@ -20,9 +20,9 @@ class ConjunctiveQuery:
     #     self.filters.append(filter_clause)
     #     self.selected_vars.update(filter_clause.mentioned_vars)
 
-    def set_selected_variables(self, variables: set()):
-        """Définit explicitement les variables à récupérer dans le SELECT."""
-        self.selected_vars = variables
+    # def set_selected_variables(self, variables: set()):
+    #     """Définit explicitement les variables à récupérer dans le SELECT."""
+    #     self.selected_vars = variables
 
     @property
     def is_star_query(self) -> bool:

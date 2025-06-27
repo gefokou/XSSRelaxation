@@ -14,3 +14,4 @@ select ?x {
   ?x a ub:Person.
   <http://www.University0.edu> ub:hasAlumnus ?x.
 }
+

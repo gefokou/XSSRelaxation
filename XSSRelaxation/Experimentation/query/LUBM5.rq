@@ -11,3 +11,4 @@ select ?x ?y ?z {
   ?y a ub:Department;
     ub:subOrganizationOf <http://www.University0.edu>.
 }
+

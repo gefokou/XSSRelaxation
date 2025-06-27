@@ -14,3 +14,4 @@ select ?x ?y ?z {
     ub:teacherOf ?z.
   ?z a ub:Course.
 }
+

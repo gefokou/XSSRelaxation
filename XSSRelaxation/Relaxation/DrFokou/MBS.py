@@ -28,6 +28,7 @@ class MFSBasedRelaxationStrategy:
         self.k = k
         self.Res: List = []
         self.req=[]
+        self.var= Q.selected_vars.copy() if Q.selected_vars else []
         # Construction des MFS : complémentaires des XSS maximaux
         self.MFS_list= QueryFailureAnalyzer(D).find_all_failing_causes(Q)
         self.RQ=PriorityQueue()
@@ -44,21 +45,38 @@ class MFSBasedRelaxationStrategy:
         self.sim_calc = SimilarityCalculator(D)
         self.query_exec_count = 0  
         self.execution_time = 0.0
+        self.start_time = time.time()
+        relax=ConjunctiveQueryRelaxation(Q, self.D,1)
+        relaxversion = relax.relax_query()
+        # Génération de chaque requête fille en relaxant un triplet
+        for Qc in relaxversion:
+                if Qc not in self.inserted:
+                    # print(Qc.to_sparql())
+                    self.inserted.add(Qc)
+
+                    # Élagage : si un MFS reste intact dans Qc, on marque comme failed
+                    if any(mfs.is_subquery(Qc) for mfs in self.MFS_list):
+                        self.failed.add(Qc)
+                        # Sinon, on calcule la similarité et on réenfile
+                    else:
+                        sim_qc = self.sim_calc.query_similarity(self.Q.clauses, Qc.clauses)
+                        self.RQ.put((-sim_qc, next(self.counter), Qc))
 
     def relax(self) -> List:
         """
         Exécute l'algorithme MBS et renvoie les top-k bindings.
         """
-        start_time = time.time()
+        
         if not self.MFS_list:
             print("Aucune MFS trouvée, la requête initiale est valide.")
             return []
         while self.RQ and len(self.Res) < self.k:
             neg_sim,_,Qi = self.RQ.get()
             sim_val = -neg_sim
-
             # Si Qi n'est pas bloquée, exécution et collecte des résultats
             if Qi not in self.failed:
+                Qi.selected_vars=self.var
+                # print(Qi.to_sparql())
                 def execute_query(request):
                     sparql_query = request.to_sparql()
                     response = requests.post(
@@ -76,33 +94,19 @@ class MFSBasedRelaxationStrategy:
                             if len(self.Res) < self.k and binding not in self.Res:
                                 self.Res.append(binding)
                         self.req.append((Qi,sim_val))
-            relax=ConjunctiveQueryRelaxation(Qi, self.D,1)
-            relaxversion = relax.relax_query()
-            # Génération de chaque requête fille en relaxant un triplet
-            for Qc in relaxversion:
-                    if Qc not in self.inserted:
-                        # Qc.selected_vars=self.Q.selected_vars.copy()
-
-                        self.inserted.add(Qc)
-
-                        # Élagage : si un MFS reste intact dans Qc, on marque comme failed
-                        if any(mfs.is_subquery(Qc) for mfs in self.MFS_list):
-                            self.failed.add(Qc)
-                            # Sinon, on calcule la similarité et on réenfile
-                        else:
-                            sim_qc = self.sim_calc.query_similarity(self.Q.clauses, Qc.clauses)
-                            self.RQ.put((-sim_qc, next(self.counter), Qc))
+            else:
+                print(f"Requête échouée : {Qi.to_sparql()}")
 
         end_time = time.time()  # End time measurement
-        self.execution_time = end_time - start_time
+        self.execution_time = end_time - self.start_time
         return self.Res
 
 if __name__ == "__main__":
     # Exemple d'utilisation
-    sparql_query = """
-    prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-    select ?x ?y1 ?y2 ?y3 {
-    ?x a ub:Professor;
+    sparql_query = """ 
+prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
+select ?x ?y1 ?y2 ?y3 {
+  ?x a ub:Professor;
     ub:worksFor <http://www.Department0.University0.edu>;
     ub:name ?y1;
     ub:emailAddress ?y2;
@@ -122,7 +126,7 @@ if __name__ == "__main__":
     # Create an RDF graph D (can be loaded or built dynamically)
     D = "http://localhost:3030/ds/query"
 
-    mbs_strategy = MFSBasedRelaxationStrategy(query, D, k=50)
+    mbs_strategy = MFSBasedRelaxationStrategy(query, D, k=40)
     print("\n MFS trouvées :\n")
     for i, mfs in enumerate(mbs_strategy.MFS_list, 1):
         print(f"MFS {i} :", [cl.label for cl in mfs.clauses])
@@ -135,10 +139,8 @@ if __name__ == "__main__":
         print(rq[0].to_sparql())
         print(f"Similarity:{rq[1]}")
         print("\n")
-    for res in results:
-        print("Resultat:\n")
-        print(res)
-        print("\n")
+  
     print("Nombre de requêtes exécutées :", mbs_strategy.query_exec_count)
     print("Temps d'exécution total :", mbs_strategy.execution_time, "s")
     print("nombre de resultats:",len(mbs_strategy.Res))
+  

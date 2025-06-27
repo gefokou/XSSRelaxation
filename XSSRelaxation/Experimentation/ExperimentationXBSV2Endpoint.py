@@ -20,13 +20,11 @@ from Relaxation.parser2 import expand_sparql
 
 sparql_query = """
 prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
-    select ?x ?y1 ?y2 ?y3 {
-    ?x a ub:Professor;
-    ub:worksFor <http://www.Department0.University0.edu>;
-    ub:name ?y1;
-    ub:emailAddress ?y2;
-    ub:telephone ?y3.
-}"""
+select ?x {
+  ?x a ub:Person.
+  <http://www.University0.edu> ub:hasAlumnus ?x.
+}
+"""
 
 devquery=expand_sparql(sparql_query)
 # print("\nRequête SPARQL développée :")
@@ -42,7 +40,7 @@ D = "http://localhost:3030/ds/query"
  # Uncomment if you have a file
 
 # Number of repaired queries needed.
-k = 50
+k = 40
 
 # Instantiate the parallel relaxation strategy.
 strategy = ParallelRelaxationSmartStrategy(query, D, k)
@@ -71,3 +69,4 @@ print("Statistiques de la methode: \n")
 print(f"temps d'execution:{strategy.execution_time}")
 print(f"nombre d'execution de requetes:{strategy.query_exec_count}")
 print("nombre de resultats:",len(strategy.Res))
+print("nombre de requetes executees par le filter:",strategy.nbfilter)
